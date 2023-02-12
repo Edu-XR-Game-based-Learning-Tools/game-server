@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Ardalis.GuardClauses" Version="4.0.1" />
+        <PackageReference Include="Ardalis.Specification" Version="6.1.0" />
+        <PackageReference Include="Ardalis.Specification.EntityFrameworkCore" Version="6.1.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Data\Configuration\" />
+        <Folder Include="Migrations\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\GBLT.Core\GBLT.Core.csproj" />
+    </ItemGroup>
+</Project>
