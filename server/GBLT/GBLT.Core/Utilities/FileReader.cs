@@ -1,7 +1,4 @@
-
-using Newtonsoft.Json;
-using System;
-using System.IO;
+namespace Core.Utility;
 
 public class FileReader
 {
@@ -39,6 +36,8 @@ public class FileReader
 
     private class FileNotFound : Exception
     {
-        public FileNotFound(string mess) : base(mess) { }
+        public FileNotFound(string mess) : base(mess)
+        {
+        }
     }
 }

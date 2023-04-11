@@ -1,8 +1,7 @@
-﻿using Core.Entity;
-using Core.Service;
+﻿using Core.Configuration;
+using Core.Entity;
 using Infrastructure;
 using RpcService.Authentication;
-using RpcService.Hub;
 using RpcService.Service;
 using Shared.Network;
 
@@ -15,42 +14,12 @@ namespace RpcService.Configuration
             services.AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
             services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
 
-            services.AddSingleton<JwtTokenService>();
-
-            // Data service
-            services.AddSingleton<IRedisDataService, RedisDataService>();
-            services.AddSingleton<IDefinitionDataService, DefinitionDataService>();
-            services.AddScoped<IMetaDataService, MetaDataService>();
-            services.AddScoped<IUserDataService, UserDataService>();
-            services.AddScoped<IUserAccountDataService, UserAccountDataService>();
-
-            // Internal data handle service
-            services.AddSingleton<VerifySessionFilter>();
-            services.AddHttpClient<IHttpService, HttpService>();
-            services.AddScoped<IMetaService, MetaService>();
-
             // Grpc service
-            services.AddScoped<IAuthServices, AuthenService>();
-            services.AddScoped<IGenericServices, GenericService>();
+            services.AddSingleton<VerifySessionFilter>();
+            services.AddScoped<IRpcAuthService, AuthService>();
+            services.AddScoped<IGenericService, GenericService>();
 
-            return services;
-        }
-
-        public static IServiceCollection AddDelegateService(this IServiceCollection services)
-        {
-            services.AddScoped<GoogleService>();
-            services.AddScoped<FirebaseService>();
-            services.AddScoped<PasswordService>();
-            services.AddScoped<LoginServiceResolver>(serviceProvider => accountType =>
-            {
-                return accountType switch
-                {
-                    AccountType.PASSWORD => serviceProvider.GetService<PasswordService>(),
-                    AccountType.GOOGLE => serviceProvider.GetService<GoogleService>(),
-                    AccountType.FACEBOOK or AccountType.FIREBASE => serviceProvider.GetService<FirebaseService>(),
-                    _ => null,
-                };
-            });
+            services.AddInjectServices();
 
             return services;
         }

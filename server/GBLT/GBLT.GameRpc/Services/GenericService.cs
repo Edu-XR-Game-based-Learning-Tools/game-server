@@ -6,7 +6,7 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace RpcService.Service
 {
-    public class GenericService : ServiceBase<IGenericServices>, IGenericServices
+    public class GenericService : ServiceBase<IGenericService>, IGenericService
     {
         private readonly ILogger _logger;
         private readonly IMetaService _metaService;

@@ -1,20 +1,21 @@
-﻿using Core.Entity;
-using System.Threading.Tasks;
+﻿using Core.Dto;
+using Core.Entity;
+using Shared.Network;
 
 namespace Core.Service
 {
     public interface IUserDataService
     {
-        Task<TUser> GetOrCreateUser(string typeAccountId);
+        Task<GeneralResponse> Create(RegisterRequest message);
 
-        Task<TUser> GetUserById(int userId);
+        Task<TUser> Find(string identityId);
 
-        Task<TUser> GetUserByIdFromCache(int userId);
+        Task<TUser> FindByName(string userName);
 
-        Task<TUser> GetUserByTypeAccountId(string typeAccountId);
+        Task<bool> CheckPassword(TUser user, string password);
 
-        Task<string> UpdateUserName(int userId, string userName);
+        Task<string[]> GetUserRoles(string identityId);
 
-        Task AddTesterData(TUser user);
+        Task Update(TUser user);
     }
 }

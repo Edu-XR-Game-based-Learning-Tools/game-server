@@ -1,7 +1,6 @@
-﻿using LMS.Server.Infrastructure.Shared;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace LMS.Server.Infrastructure.Identity
+namespace Infrastructure
 {
     public class AppIdentityDbContextFactory : DesignTimeDbContextFactoryBase<AppIdentityDbContext>
     {

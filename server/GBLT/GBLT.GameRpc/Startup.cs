@@ -1,7 +1,7 @@
+using Core.Configuration;
+using Core.Service;
 using Grpc.Net.Client;
 using Infrastructure;
-using LitJWT;
-using LitJWT.Algorithms;
 using MagicOnion.Server;
 using MessagePipe;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,6 +11,7 @@ using RedLockNet;
 using RedLockNet.SERedis;
 using RpcService.Authentication;
 using RpcService.Configuration;
+using System.Text;
 
 namespace RpcService
 {
@@ -44,35 +45,16 @@ namespace RpcService
             {
                 options.GlobalFilters.Add<VerifySessionFilter>();
             });
-            services.Configure<JwtTokenServiceOptions>(Configuration.GetSection("JwtToken"));
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    JwtTokenServiceOptions jwtOptions = Configuration.GetSection("JwtToken").Get<JwtTokenServiceOptions>();
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(jwtOptions.Secret)),
-                        RequireExpirationTime = true,
-                        RequireSignedTokens = true,
-                        ClockSkew = TimeSpan.FromDays(jwtOptions.AuthTokenExpireHour),
 
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                    };
-#if DEBUG
-                    options.RequireHttpsMetadata = false;
-#endif
-                });
+            AddJwtAuthentication(services);
 
             services.AddAuthorization();
             services.AddMessagePipe();
 
             services.AddCoreServices();
-            services.AddDelegateService();
 
             services.AddControllersWithViews();
+            services.AddInjectServices();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -112,6 +94,63 @@ namespace RpcService
                     endpoints.MapMagicOnionHttpGateway("_", app.ApplicationServices.GetService<MagicOnionServiceDefinition>().MethodHandlers, GrpcChannel.ForAddress(rpcAddress));
                     endpoints.MapMagicOnionSwagger("swagger", app.ApplicationServices.GetService<MagicOnionServiceDefinition>().MethodHandlers, "/_/");
                 });
+        }
+
+        private void AddJwtAuthentication(IServiceCollection services)
+        {
+            var authSettings = Configuration.GetSection(nameof(AuthSettings));
+            services.Configure<AuthSettings>(authSettings);
+            var signingKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(authSettings[nameof(AuthSettings.Secret)]));
+
+            // jwt wire up
+            var jwtAppSettingOptions = Configuration.GetSection(nameof(JwtIssuerOptions));
+
+            // Configure JwtIssuerOptions
+            services.Configure<JwtIssuerOptions>(options =>
+            {
+                options.Issuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
+                options.Audience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)];
+                options.SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+            });
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)],
+
+                ValidateAudience = true,
+                ValidAudience = jwtAppSettingOptions[nameof(JwtIssuerOptions.Audience)],
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = signingKey,
+
+                RequireExpirationTime = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(configureOptions =>
+            {
+                configureOptions.ClaimsIssuer = jwtAppSettingOptions[nameof(JwtIssuerOptions.Issuer)];
+                configureOptions.TokenValidationParameters = tokenValidationParameters;
+                configureOptions.SaveToken = true;
+
+                configureOptions.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                        {
+                            context.Response.Headers.Add("Token-Expired", "true");
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
+            });
         }
     }
 }

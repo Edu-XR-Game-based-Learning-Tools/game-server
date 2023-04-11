@@ -1,28 +1,31 @@
-﻿using MessagePack;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace Core.Entity
 {
-    public enum UserRole
-    {
-        Player,
-        Tester
-    }
-
-    [Index(nameof(UserId))]
+    [Index(nameof(UserName))]
     public class TUser : BaseEntity, IAggregateRoot
     {
-        public string UserId { get; set; } // Unique Id for each User in client
-        public string Name { get; set; }
-        public UserRole Role { get; set; }
+        public string IdentityId { get; set; }
+        public string UserName { get; set; } // Required by automapper
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
 
-        [IgnoreMember]
-        public ICollection<TUserAccount> Accounts { get; set; }
+        private readonly List<TRefreshToken> _refreshTokens = new();
+        public IReadOnlyCollection<TRefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
-        public TUser()
+        public bool HasValidRefreshToken(string refreshToken)
         {
-            Role = UserRole.Player;
+            return _refreshTokens.Any(rt => rt.Token == refreshToken && rt.Active);
+        }
+
+        public void AddRefreshToken(string token, string remoteIpAddress, double daysToExpire = 5)
+        {
+            _refreshTokens.Add(new TRefreshToken(token, DateTime.UtcNow.AddDays(daysToExpire), remoteIpAddress));
+        }
+
+        public void RemoveRefreshToken(string refreshToken)
+        {
+            _refreshTokens.Remove(_refreshTokens.First(t => t.Token == refreshToken));
         }
     }
 }

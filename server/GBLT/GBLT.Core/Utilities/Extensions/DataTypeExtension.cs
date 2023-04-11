@@ -72,21 +72,6 @@ namespace Core.Utility
         }
     }
 
-    public static class AuthTypeExtension
-    {
-        public static AccountType GetAccountType(this AuthType self)
-        {
-            return self switch
-            {
-                AuthType.PASSWORD => AccountType.PASSWORD,
-                AuthType.GOOGLE => AccountType.GOOGLE,
-                AuthType.FIREBASE => AccountType.FIREBASE,
-                AuthType.FACEBOOK => AccountType.FACEBOOK,
-                _ => AccountType.NONE,
-            };
-        }
-    }
-
     public static class FloatExtension
     {
     }

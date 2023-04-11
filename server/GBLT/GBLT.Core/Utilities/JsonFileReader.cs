@@ -1,6 +1,6 @@
-
-using System;
 using Newtonsoft.Json;
+
+namespace Core.Utility;
 
 public class JsonFileReader
 {
@@ -14,7 +14,7 @@ public class JsonFileReader
         catch (Exception e)
         {
             Console.WriteLine("Error when parse [{0}][{1}]", dir, e);
-            return default(T);
+            return default;
         }
     }
 }

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Core.Entity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace LMS.Server.Infrastructure.Identity
+namespace Infrastructure
 {
     public class AppIdentityDbContext : IdentityDbContext<TIdentityUser>
     {

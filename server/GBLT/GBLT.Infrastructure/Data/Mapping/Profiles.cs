@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
-using LMS.Server.Core.Domain;
-using LMS.Server.Core.Dto;
-using LMS.Server.Infrastructure.Identity;
+using Core.Entity;
 
-namespace LMS.Server.Infrastructure.Data
+namespace Infrastructure
 {
     public class UserProfile : Profile
     {
@@ -12,13 +10,6 @@ namespace LMS.Server.Infrastructure.Data
             CreateMap<TUser, TIdentityUser>().ConstructUsing(u => new TIdentityUser { UserName = u.UserName, Email = u.Email }).ForMember(au => au.Id, opt => opt.Ignore());
             CreateMap<TIdentityUser, TUser>().ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email)).
                                        ForMember(dest => dest.PasswordHash, opt => opt.MapFrom(src => src.PasswordHash));
-
-            CreateMap<TUser, UserDto>();
-            CreateMap<UserDto, TUser>();
-
-            CreateMap<TCourse, CourseDto>();
-            CreateMap<TLesson, LessonDto>();
-            CreateMap<TTest, TestDto>();
         }
     }
 }

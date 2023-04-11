@@ -23,16 +23,16 @@ namespace RpcService.Authentication
             var identity = context.CallContext.GetHttpContext().User.Identity;
             if (identity.IsAuthenticated)
             {
-                int userId = ((CustomJwtAuthUserIdentity)identity).Id;
-                string sessionId = ((CustomJwtAuthUserIdentity)identity).SessionId;
-                _logger.LogDebug("VerifySessionFilter {context.ServiceType}: {identity.IsAuthenticated}\n- Session {sessionId}",
-                    context.ServiceType, identity.IsAuthenticated, sessionId);
+                //int userId = ((CustomJwtAuthUserIdentity)identity).Id;
+                //string sessionId = ((CustomJwtAuthUserIdentity)identity).SessionId;
+                //_logger.LogDebug("VerifySessionFilter {context.ServiceType}: {identity.IsAuthenticated}\n- Session {sessionId}",
+                //    context.ServiceType, identity.IsAuthenticated, sessionId);
 
-                using var scope = _serviceProvider.CreateScope();
-                IUserAccountDataService userDataService = scope.ServiceProvider.GetRequiredService<IUserAccountDataService>();
-                string currentSession = await userDataService.GetUserSessionCache(userId);
-                if (currentSession != sessionId)
-                    throw new RpcException(new Status(StatusCode.Unauthenticated, $"Invalid session: {sessionId}"));
+                //using var scope = _serviceProvider.CreateScope();
+                //IUserAccountDataService userDataService = scope.ServiceProvider.GetRequiredService<IUserAccountDataService>();
+                //string currentSession = await userDataService.GetUserSessionCache(userId);
+                //if (currentSession != sessionId)
+                //    throw new RpcException(new Status(StatusCode.Unauthenticated, $"Invalid session: {sessionId}"));
             }
             await next(context);
         }

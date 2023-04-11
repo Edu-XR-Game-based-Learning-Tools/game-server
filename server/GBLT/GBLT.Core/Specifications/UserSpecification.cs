@@ -1,19 +1,14 @@
 ﻿using Ardalis.Specification;
 using Core.Entity;
-using System.Linq;
 
 namespace Core.Specification
 {
-    public sealed class UserSpecification : Specification<TUser>, ISingleResultSpecification
+    public sealed class UserSpecification : Specification<TUser>, ISingleResultSpecification<TUser>
     {
-        public UserSpecification(int userId)
+        public UserSpecification(string identityId)
         {
-            Query.Where(u => u.Id == userId);
-        }
-
-        public UserSpecification(string typeAccountId)
-        {
-            Query.Where(u => u.Accounts.Any(r => r.AccountId == typeAccountId));
+            Query.Where(u => u.IdentityId == identityId)
+                .Include(u => u.RefreshTokens);
         }
     }
 }
