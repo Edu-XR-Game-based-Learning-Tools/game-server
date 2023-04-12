@@ -13,6 +13,8 @@ namespace Core.Entity
         private readonly List<TRefreshToken> _refreshTokens = new();
         public IReadOnlyCollection<TRefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
+        public ICollection<TQuizCollection> QuizCollections { get; private set; }
+
         public bool HasValidRefreshToken(string refreshToken)
         {
             return _refreshTokens.Any(rt => rt.Token == refreshToken && rt.Active);
