@@ -1,0 +1,11 @@
+[
+  {
+    "Id": "Default",
+
+    "AddressableBundleLabels": [
+      "GameMenu"
+    ],
+    "CheckPreloadAssetErrorMessage": "This is an error message! It came from Json!",
+    "DownloadAssetErrorMessage": "Download error message! It came from Json!"
+  }
+]

@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBLT.Shared", "GBLT.Shared\GBLT.Shared.csproj", "{EBFC2FD9-B7DC-4695-B19E-636149D5D9DB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBLT.Infrastructure", "GBLT.Infrastructure\GBLT.Infrastructure.csproj", "{65C7007A-4123-4760-84B7-A8BC43532816}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBLT.Core", "GBLT.Core\GBLT.Core.csproj", "{415F0ECB-A631-4AC6-AFA8-0BF1F909F114}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{134A4A84-A433-41DE-99C1-8A3DBC58C9D1}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBLT.GameRpc", "GBLT.GameRpc\GBLT.GameRpc.csproj", "{7FBF6D9B-95DF-4665-8B95-1BE291800009}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GBLT.WebAPI", "GBLT.WebAPI\GBLT.WebAPI.csproj", "{C2E4A09C-FCA9-4470-A8D2-90000D869BCA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EBFC2FD9-B7DC-4695-B19E-636149D5D9DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBFC2FD9-B7DC-4695-B19E-636149D5D9DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBFC2FD9-B7DC-4695-B19E-636149D5D9DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBFC2FD9-B7DC-4695-B19E-636149D5D9DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{65C7007A-4123-4760-84B7-A8BC43532816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{65C7007A-4123-4760-84B7-A8BC43532816}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{65C7007A-4123-4760-84B7-A8BC43532816}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{65C7007A-4123-4760-84B7-A8BC43532816}.Release|Any CPU.Build.0 = Release|Any CPU
+		{415F0ECB-A631-4AC6-AFA8-0BF1F909F114}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{415F0ECB-A631-4AC6-AFA8-0BF1F909F114}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{415F0ECB-A631-4AC6-AFA8-0BF1F909F114}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{415F0ECB-A631-4AC6-AFA8-0BF1F909F114}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FBF6D9B-95DF-4665-8B95-1BE291800009}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FBF6D9B-95DF-4665-8B95-1BE291800009}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FBF6D9B-95DF-4665-8B95-1BE291800009}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2E4A09C-FCA9-4470-A8D2-90000D869BCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2E4A09C-FCA9-4470-A8D2-90000D869BCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2E4A09C-FCA9-4470-A8D2-90000D869BCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2E4A09C-FCA9-4470-A8D2-90000D869BCA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A03EC330-5F85-4D2C-8A8D-12A479C57D3E}
+	EndGlobalSection
+EndGlobal
