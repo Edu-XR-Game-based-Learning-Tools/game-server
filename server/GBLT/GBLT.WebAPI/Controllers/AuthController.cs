@@ -47,8 +47,8 @@ namespace WebAPI.Controllers
             return contentResult;
         }
 
-        // POST api/auth/refreshtoken
-        [HttpPost("refreshtoken")]
+        // POST api/auth/refreshToken
+        [HttpPost("refreshToken")]
         public async Task<ActionResult> RefreshToken([FromBody] ExchangeRefreshTokenRequest request)
         {
             if (!ModelState.IsValid) { return BadRequest(ModelState); }

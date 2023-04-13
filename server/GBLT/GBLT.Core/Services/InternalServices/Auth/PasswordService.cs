@@ -24,10 +24,10 @@ namespace Core.Service
 
         public async Task<LoginResponse> Login(LoginRequest message)
         {
-            if (!string.IsNullOrEmpty(message.UserName) && !string.IsNullOrEmpty(message.Password))
+            if (!string.IsNullOrEmpty(message.Username) && !string.IsNullOrEmpty(message.Password))
             {
                 // ensure we have a user with the given user name
-                var user = await _userDataService.FindByName(message.UserName);
+                var user = await _userDataService.FindByName(message.Username);
                 if (user != null)
                 {
                     // validate password
@@ -42,7 +42,7 @@ namespace Core.Service
                         string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
                         return new LoginResponse
                         {
-                            AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.UserName, role),
+                            AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role),
                             RefreshToken = refreshToken
                         };
                     }
@@ -56,7 +56,7 @@ namespace Core.Service
             var response = await _userDataService.Create(message);
             if (response.Success)
             {
-                var user = await _userDataService.FindByName(message.UserName);
+                var user = await _userDataService.FindByName(message.Username);
                 // generate refresh token
                 var refreshToken = JwtUtility.GenerateToken();
                 user.AddRefreshToken(refreshToken, message.RemoteIpAddress);
@@ -66,7 +66,7 @@ namespace Core.Service
                 string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
                 return new LoginResponse
                 {
-                    AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.UserName, role),
+                    AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role),
                     RefreshToken = refreshToken
                 };
             }
@@ -86,7 +86,7 @@ namespace Core.Service
                 if (user.HasValidRefreshToken(message.RefreshToken))
                 {
                     string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
-                    var jwtToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.UserName, role);
+                    var jwtToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role);
                     var refreshToken = JwtUtility.GenerateToken();
                     user.RemoveRefreshToken(message.RefreshToken); // delete the token we've exchanged
                     user.AddRefreshToken(refreshToken, ""); // add the new one
