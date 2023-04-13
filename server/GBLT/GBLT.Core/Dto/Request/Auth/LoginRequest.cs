@@ -7,7 +7,7 @@ namespace Core.Dto
     {
         [Required(ErrorMessage = "Username is required.")]
         //[RegularExpression(@"^[A-Za-z]\w{5, 29}$", ErrorMessage = "Invalid username.")]
-        public string UserName { get; set; }
+        public string Username { get; set; }
         //[RegularExpression(@"^^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,32}$",
         //            ErrorMessage = "Password must follow:\n" +
         //    "At least one uppercase, lowercase, digit, and specific character.\n" +

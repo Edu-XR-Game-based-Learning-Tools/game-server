@@ -28,13 +28,13 @@ namespace Core.Service
 
         public async Task<GeneralResponse> Create(RegisterRequest message)
         {
-            var identityUser = new TIdentityUser { Email = message.Email, UserName = message.UserName };
+            var identityUser = new TIdentityUser { Email = message.Email, UserName = message.Username };
             var identityResult = await _userManager.CreateAsync(identityUser, message.Password);
 
             if (identityResult.Succeeded)
             {
                 await _userManager.AddToRoleAsync(identityUser, message.Role);
-                var user = new TUser { IdentityId = identityUser.Id, UserName = identityUser.UserName };
+                var user = new TUser { IdentityId = identityUser.Id, Username = identityUser.UserName };
                 await _userRepository.AddAsync(user);
             }
 

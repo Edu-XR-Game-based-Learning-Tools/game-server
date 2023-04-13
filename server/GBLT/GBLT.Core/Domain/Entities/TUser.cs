@@ -2,11 +2,11 @@
 
 namespace Core.Entity
 {
-    [Index(nameof(UserName))]
+    [Index(nameof(Username))]
     public class TUser : BaseEntity, IAggregateRoot
     {
         public string IdentityId { get; set; }
-        public string UserName { get; set; } // Required by automapper
+        public string Username { get; set; } // Required by automapper
         public string Email { get; set; }
         public string PasswordHash { get; set; }
 
