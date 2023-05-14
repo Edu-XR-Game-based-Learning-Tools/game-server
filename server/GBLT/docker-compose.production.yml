@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  gblt_postgres:
+    container_name: gblt_postgres
+    image: postgres:15.2-alpine
+    restart: always
+    volumes:
+      - ./db/postgresql:/var/lib/postgresql/data:Z
+    environment:
+      POSTGRES_DB: 'gblt'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: '123456'
+    ports:
+      - 5432:5432
+  
+  gblt_redis:
+    container_name: gblt_redis
+    image: redis:7.2-rc1-alpine
+    restart: always
+    command: redis-server --requirepass 123456
+    volumes:
+      - ./db/redis:/var/lib/redis:Z
+    environment:
+      REDIS_REPLICATION_MODE: 'master'
+    ports:
+      - 6379:6379

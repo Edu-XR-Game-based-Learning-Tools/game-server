@@ -11,6 +11,8 @@ namespace Infrastructure
     {
         public DbSet<TUser> User { get; set; }
         public DbSet<TMeta> Meta { get; set; }
+        public DbSet<TQuiz> Quiz { get; set; }
+        public DbSet<TQuizCollection> QuizCollection { get; set; }
 
         public AppDbContext(
             DbContextOptions<AppDbContext> options) : base(options)
