@@ -43,11 +43,8 @@ namespace Core.Framework
         {
             _logger.Log($"Addressable url: {EnvSetting.AddressableProdUrl}");
 
-            await _gameStore.CreateModule<IDummy, DummyModel>(
-                _gameSetting.DummyId, ViewName.Unity, ModuleName.Dummy);
-
-            await _gameStore.CreateModule<IDummyUTKit, DummyUTKitModel>(
-                _gameSetting.DummyUTKitId, ViewName.Unity, ModuleName.DummyUTKit);
+            await _gameStore.CreateModule<IDummyXR, DummyXRModel>(
+                "", ViewName.Unity, ModuleName.DummyXR);
         }
 
         public void Out()

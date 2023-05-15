@@ -80,7 +80,7 @@ namespace Core.View
         {
             View.transform.localPosition = Vector3.zero;
             View.transform.localScale = Vector3.one;
-            if (!ConfigModel.KeepLayout)
+            if (!ConfigModel.KeepLayout && View.transform.TryGetComponent<RectTransform>(out var _))
             {
                 RectTransform rect = View.GetComponent<RectTransform>();
                 rect.SetAnchor(ConfigModel.AnchorPreset);

@@ -11,7 +11,8 @@
     public enum UIType
     {
         uGUI,
-        UIToolkit
+        UIToolkit,
+        MRTK3,
     }
 
     public enum AnchorPresets

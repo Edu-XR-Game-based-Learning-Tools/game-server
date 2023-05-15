@@ -25,6 +25,10 @@ MonoBehaviour:
     m_Address: Assets/Game/Bundles/Prefabs/Views/UIElements/Dummy
     m_ReadOnly: 0
     m_SerializedLabels: []
+  - m_GUID: 571d5af24f4efbc4fa3be264c9e48d4f
+    m_Address: Assets/Game/Bundles/Prefabs/Views/MRTK3
+    m_ReadOnly: 0
+    m_SerializedLabels: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 4403e9b14a8c63e4ca43f63f27017f4c, type: 2}
   m_SchemaSet:

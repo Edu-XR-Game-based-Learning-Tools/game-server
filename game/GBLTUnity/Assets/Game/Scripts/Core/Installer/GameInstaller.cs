@@ -64,6 +64,11 @@ namespace Core.Framework
                 .WithId(ModuleName.DummyUTKit).To<IDummyUTKit>()
                 .FromSubContainerResolve()
                 .ByInstaller<DummyUTKit.Installer>();
+
+            Container.BindFactory<IBaseModule, BaseModule.Factory>()
+                .WithId(ModuleName.DummyXR).To<IDummyXR>()
+                .FromSubContainerResolve()
+                .ByInstaller<DummyXR.Installer>();
         }
 
         private void InstallServices()
