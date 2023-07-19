@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Core.Dto;
 using Core.Entity;
 using Core.Specification;
 using Microsoft.AspNetCore.Identity;
@@ -37,7 +36,6 @@ namespace Core.Service
                 var user = new TUser { IdentityId = identityUser.Id, Username = identityUser.UserName };
                 await _userRepository.AddAsync(user);
             }
-
 
             return new GeneralResponse { Success = identityResult.Succeeded, Message = identityResult.Succeeded ? null : identityResult.Errors.First().Description };
         }

@@ -1,5 +1,4 @@
-﻿using Core.Dto;
-using Core.Entity;
+﻿using Core.Entity;
 using Shared.Network;
 
 namespace Core.Service

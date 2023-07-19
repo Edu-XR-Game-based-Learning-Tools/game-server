@@ -4,7 +4,9 @@ namespace Core.Service
 {
     public interface IDefinitionDataService
     {
-        MemoryDatabase InMemoryData { get; set; }
+        MemoryDatabase InMemoryData { get; }
+
+        byte[] DefinitionsData { get; }
 
         GeneralConfigDefinition GetGeneralConfig();
 

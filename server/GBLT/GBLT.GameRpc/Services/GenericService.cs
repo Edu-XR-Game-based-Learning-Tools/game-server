@@ -24,6 +24,7 @@ namespace RpcService.Service
 
         public async UnaryResult<ClientVerificationData> VerifyClient(string clientVersion)
         {
+            Console.WriteLine("VerifyClient");
             ClientVerificationData result = new()
             {
                 IsValidVersion = false,
@@ -75,6 +76,12 @@ namespace RpcService.Service
         {
             DateTime currentTime = DateTime.UtcNow;
             return UnaryResult.FromResult(currentTime);
+        }
+
+        public UnaryResult<byte[]> GetDefinitions()
+        {
+            Console.WriteLine("GetDefinitions");
+            return UnaryResult.FromResult(_definitionService.DefinitionsData);
         }
 
         public UnaryResult<EnvironmentGenericConfig> GetGenericConfig()

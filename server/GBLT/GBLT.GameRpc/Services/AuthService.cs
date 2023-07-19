@@ -1,12 +1,10 @@
 ﻿using Core.Service;
 using MagicOnion;
 using MagicOnion.Server;
-using Microsoft.AspNetCore.Authorization;
 using Shared.Network;
 
 namespace RpcService.Service
 {
-    [Authorize]
     public class AuthService : ServiceBase<IRpcAuthService>, IRpcAuthService
     {
         private readonly IAuthService _authService;
@@ -17,21 +15,22 @@ namespace RpcService.Service
             _authService = authService;
         }
 
-        public async UnaryResult<string> Login()
+        public async UnaryResult<AuthenticationData> Login(LoginRequest request)
         {
-            return "";
+            AuthenticationData response = await _authService.Login<AuthenticationData>(request);
+            return response;
         }
 
-        [AllowAnonymous]
-        public async UnaryResult<string> Register()
+        public async UnaryResult<AuthenticationData> Register(RegisterRequest request)
         {
-            return "";
+            AuthenticationData response = await _authService.Register<AuthenticationData>(request);
+            return response;
         }
 
-        [AllowAnonymous]
-        public async UnaryResult<string> RefreshToken()
+        public async UnaryResult<AuthenticationData> RefreshToken(ExchangeRefreshTokenRequest request)
         {
-            return "";
+            AuthenticationData response = await _authService.RefreshToken<AuthenticationData>(request);
+            return response;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Core.Dto;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Shared.Network;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

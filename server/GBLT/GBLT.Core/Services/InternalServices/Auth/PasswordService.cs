@@ -1,5 +1,8 @@
-using Core.Dto;
+using Core.Entity;
 using Microsoft.Extensions.Logging;
+using Shared.Network;
+using System.Security.Claims;
+using static Shared.Network.Enums;
 
 namespace Core.Service
 {
@@ -22,7 +25,23 @@ namespace Core.Service
             _jwtTokenValidator = jwtTokenValidator;
         }
 
-        public async Task<LoginResponse> Login(LoginRequest message)
+        private T PrepareAuthResponse<T>(TUser user, AccessToken accessToken, string refreshToken) where T : LoginResponse, new()
+        {
+            T response = new()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+            if (typeof(T) == typeof(AuthenticationData))
+            {
+                (response as AuthenticationData).UserId = user.EId;
+                (response as AuthenticationData).UserName = user.UserName ?? user.Username;
+            }
+
+            return response;
+        }
+
+        public async Task<T> Login<T>(LoginRequest message) where T : LoginResponse, new()
         {
             if (!string.IsNullOrEmpty(message.Username) && !string.IsNullOrEmpty(message.Password))
             {
@@ -38,23 +57,20 @@ namespace Core.Service
                         user.AddRefreshToken(refreshToken, message.RemoteIpAddress);
                         await _userDataService.Update(user);
 
-                        // generate access token
                         string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
-                        return new LoginResponse
-                        {
-                            AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role),
-                            RefreshToken = refreshToken
-                        };
+                        T response = PrepareAuthResponse<T>(user,
+                            await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role), refreshToken);
+                        return response;
                     }
                 }
             }
-            return new LoginResponse { Success = false, Message = "Invalid username or password." };
+            return new T { Success = false, Message = "Invalid username or password." };
         }
 
-        public async Task<LoginResponse> Register(RegisterRequest message)
+        public async Task<T> Register<T>(RegisterRequest message) where T : LoginResponse, new()
         {
-            var response = await _userDataService.Create(message);
-            if (response.Success)
+            var createResponse = await _userDataService.Create(message);
+            if (createResponse.Success)
             {
                 var user = await _userDataService.FindByName(message.Username);
                 // generate refresh token
@@ -62,43 +78,38 @@ namespace Core.Service
                 user.AddRefreshToken(refreshToken, message.RemoteIpAddress);
                 await _userDataService.Update(user);
 
-                // generate access token
                 string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
-                return new LoginResponse
-                {
-                    AccessToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role),
-                    RefreshToken = refreshToken
-                };
+                T response = PrepareAuthResponse<T>(user,
+                            await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role), refreshToken);
+                return response;
             }
-            return new LoginResponse { Success = false, Message = response.Message };
+            return new T { Success = false, Message = createResponse.Message };
         }
 
-        public async Task<LoginResponse> RefreshToken(ExchangeRefreshTokenRequest message)
+        public async Task<T> RefreshToken<T>(ExchangeRefreshTokenRequest message) where T : LoginResponse, new()
         {
             var cp = _jwtTokenValidator.GetPrincipalFromToken(message.AccessToken);
 
             // invalid token/signing key was passed and we can't extract user claims
             if (cp != null)
             {
-                var id = cp.Claims.First(c => c.Type == "id");
+                var id = cp.Claims.First(c => c.Type == ClaimTypes.NameIdentifier);
                 var user = await _userDataService.Find(id.Value);
 
                 if (user.HasValidRefreshToken(message.RefreshToken))
                 {
-                    string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
-                    var jwtToken = await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role);
                     var refreshToken = JwtUtility.GenerateToken();
                     user.RemoveRefreshToken(message.RefreshToken); // delete the token we've exchanged
                     user.AddRefreshToken(refreshToken, ""); // add the new one
                     await _userDataService.Update(user);
-                    return new LoginResponse
-                    {
-                        AccessToken = jwtToken,
-                        RefreshToken = refreshToken
-                    };
+
+                    string role = (await _userDataService.GetUserRoles(user.IdentityId)).FirstOrDefault();
+                    T response = PrepareAuthResponse<T>(user,
+                           await _jwtFactory.GenerateEncodedToken(user.IdentityId, user.Username, role), refreshToken);
+                    return response;
                 }
             }
-            return new LoginResponse { Success = false, Message = "Invalid token." };
+            return new T { Success = false, Message = "Invalid token." };
         }
     }
 }

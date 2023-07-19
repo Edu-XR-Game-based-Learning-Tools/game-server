@@ -1,13 +1,13 @@
-using Core.Dto;
+using Shared.Network;
 
 namespace Core.Service
 {
     public interface IAuthService
     {
-        Task<LoginResponse> Login(LoginRequest message);
+        Task<T> Login<T>(LoginRequest message) where T : LoginResponse, new();
 
-        Task<LoginResponse> Register(RegisterRequest message);
+        Task<T> Register<T>(RegisterRequest message) where T : LoginResponse, new();
 
-        Task<LoginResponse> RefreshToken(ExchangeRefreshTokenRequest message);
+        Task<T> RefreshToken<T>(ExchangeRefreshTokenRequest message)where T : LoginResponse, new();
     }
 }

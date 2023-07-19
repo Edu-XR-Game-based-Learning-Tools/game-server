@@ -1,4 +1,4 @@
-﻿using Core.Dto;
+﻿using Shared.Network;
 using System.Security.Cryptography;
 
 namespace Core.Service

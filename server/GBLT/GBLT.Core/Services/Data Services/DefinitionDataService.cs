@@ -10,7 +10,7 @@ namespace Core.Service
         private readonly IWebHostEnvironment _hostEnvironment;
         public MemoryDatabase InMemoryData { get; set; }
 
-        private byte[] _definitionsData;
+        public byte[] DefinitionsData { get; private set; }
         private readonly string _rootPath;
         private readonly IConfiguration _configuration;
 
@@ -36,10 +36,12 @@ namespace Core.Service
             var builder = new DatabaseBuilder();
 
             var generalConfig = LoadDefinitions<GeneralConfigDefinition>();
+            var classRoom = LoadDefinitions<ClassRoomDefinition>();
             builder.Append(generalConfig);
+            builder.Append(classRoom);
 
-            _definitionsData = builder.Build();
-            InMemoryData = new MemoryDatabase(_definitionsData);
+            DefinitionsData = builder.Build();
+            InMemoryData = new MemoryDatabase(DefinitionsData);
         }
 
         public GeneralConfigDefinition GetGeneralConfig()

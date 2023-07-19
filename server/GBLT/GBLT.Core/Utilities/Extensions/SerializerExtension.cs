@@ -1,4 +1,4 @@
-﻿using MemoryPack;
+﻿using MessagePack;
 
 namespace Core.Utility
 {
@@ -6,12 +6,12 @@ namespace Core.Utility
     {
         public static byte[] Serialize<T>(this T self)
         {
-            return MemoryPackSerializer.Serialize(self);
+            return MessagePackSerializer.Serialize(self);
         }
 
         public static T Deserialize<T>(this byte[] self)
         {
-            return MemoryPackSerializer.Deserialize<T>(self);
+            return MessagePackSerializer.Deserialize<T>(self);
         }
     }
 }

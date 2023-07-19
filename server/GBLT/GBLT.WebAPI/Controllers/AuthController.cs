@@ -1,7 +1,7 @@
-using Core.Dto;
 using Core.Service;
 using Core.Utility;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Network;
 using System.Net;
 using WebAPI.Dto;
 
@@ -24,7 +24,7 @@ namespace WebAPI.Controllers
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
             if (!ModelState.IsValid) { return BadRequest(ModelState); }
-            LoginResponse response = await _authService.Login(request);
+            LoginResponse response = await _authService.Login<LoginResponse>(request);
             JsonContentResult contentResult = new()
             {
                 StatusCode = (int)HttpStatusCode.OK,
@@ -38,7 +38,7 @@ namespace WebAPI.Controllers
         public async Task<ActionResult> Register([FromBody] RegisterRequest request)
         {
             if (!ModelState.IsValid) { return BadRequest(ModelState); }
-            LoginResponse response = await _authService.Register(request);
+            LoginResponse response = await _authService.Register<LoginResponse>(request);
             JsonContentResult contentResult = new()
             {
                 StatusCode = (int)HttpStatusCode.OK,
@@ -52,7 +52,7 @@ namespace WebAPI.Controllers
         public async Task<ActionResult> RefreshToken([FromBody] ExchangeRefreshTokenRequest request)
         {
             if (!ModelState.IsValid) { return BadRequest(ModelState); }
-            LoginResponse response = await _authService.RefreshToken(request);
+            LoginResponse response = await _authService.RefreshToken<LoginResponse>(request);
             JsonContentResult contentResult = new()
             {
                 StatusCode = (int)HttpStatusCode.OK,
