@@ -67,6 +67,7 @@ namespace WebAPI
                 options.AddDefaultPolicy(policy =>
                 {
                     policy.WithOrigins("https://localhost:3000")
+                    .WithOrigins("http://192.168.1.244:3000")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowAnyOrigin();
