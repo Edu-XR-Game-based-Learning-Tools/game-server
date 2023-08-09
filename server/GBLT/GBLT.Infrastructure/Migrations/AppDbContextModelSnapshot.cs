@@ -31,7 +31,7 @@ namespace GBLT.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EId"));
 
                     b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -43,7 +43,7 @@ namespace GBLT.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("EId");
 
@@ -61,11 +61,17 @@ namespace GBLT.Infrastructure.Migrations
                     b.Property<string[]>("Answers")
                         .HasColumnType("text[]");
 
+                    b.Property<int?>("CollectionEId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("CorrectIdx")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Image")
                         .HasColumnType("text");
@@ -76,21 +82,18 @@ namespace GBLT.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
-                    b.Property<string>("Quetsion")
+                    b.Property<string>("Question")
                         .HasColumnType("text");
-
-                    b.Property<int?>("TQuizCollectionEId")
-                        .HasColumnType("integer");
 
                     b.Property<string>("ThumbNail")
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("EId");
 
-                    b.HasIndex("TQuizCollectionEId");
+                    b.HasIndex("CollectionEId");
 
                     b.ToTable("Quiz");
                 });
@@ -107,7 +110,7 @@ namespace GBLT.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -119,7 +122,7 @@ namespace GBLT.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("EId");
 
@@ -137,10 +140,10 @@ namespace GBLT.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EId"));
 
                     b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("Expires")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RemoteIpAddress")
                         .HasColumnType("text");
@@ -152,7 +155,7 @@ namespace GBLT.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("EId");
 
@@ -170,7 +173,7 @@ namespace GBLT.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EId"));
 
                     b.Property<DateTime?>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -182,7 +185,7 @@ namespace GBLT.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UserName")
                         .HasColumnType("text");
@@ -199,16 +202,20 @@ namespace GBLT.Infrastructure.Migrations
 
             modelBuilder.Entity("Core.Entity.TQuiz", b =>
                 {
-                    b.HasOne("Core.Entity.TQuizCollection", null)
+                    b.HasOne("Core.Entity.TQuizCollection", "Collection")
                         .WithMany("Quizzes")
-                        .HasForeignKey("TQuizCollectionEId");
+                        .HasForeignKey("CollectionEId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Collection");
                 });
 
             modelBuilder.Entity("Core.Entity.TQuizCollection", b =>
                 {
                     b.HasOne("Core.Entity.TUser", "Owner")
                         .WithMany("QuizCollections")
-                        .HasForeignKey("OwnerEId");
+                        .HasForeignKey("OwnerEId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Owner");
                 });

@@ -1,12 +1,12 @@
 ﻿namespace Core.Entity
 {
-    public class TQuizCollection : BaseEntity
+    public class TQuizCollection : BaseEntity, IAggregateRoot
     {
         public string Name { get; set; }
         public string Description { get; set; }
         public string Configuration { get; set; }
 
-        public TUser Owner { get; private set; }
-        public ICollection<TQuiz> Quizzes { get; private set; }
+        public TUser Owner { get; set; }
+        public IList<TQuiz> Quizzes { get; set; }
     }
 }
