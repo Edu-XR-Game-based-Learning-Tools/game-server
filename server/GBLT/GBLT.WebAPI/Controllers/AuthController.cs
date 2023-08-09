@@ -1,5 +1,6 @@
 using Core.Service;
 using Core.Utility;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Network;
 using System.Net;
@@ -49,6 +50,7 @@ namespace WebAPI.Controllers
 
         // POST api/auth/refreshToken
         [HttpPost("refreshToken")]
+        [Authorize]
         public async Task<ActionResult> RefreshToken([FromBody] ExchangeRefreshTokenRequest request)
         {
             if (!ModelState.IsValid) { return BadRequest(ModelState); }

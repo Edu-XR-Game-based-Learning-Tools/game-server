@@ -22,6 +22,16 @@ namespace Infrastructure
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<TUser>()
+                .HasMany(u => u.QuizCollections)
+                .WithOne(h => h.Owner)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<TQuizCollection>()
+                .HasMany(u => u.Quizzes)
+                .WithOne(h => h.Collection)
+                .OnDelete(DeleteBehavior.Cascade);
         }
 
         public override int SaveChanges()

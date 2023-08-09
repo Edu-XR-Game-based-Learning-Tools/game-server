@@ -1,6 +1,7 @@
 ﻿namespace Shared.Network
 {
     using MessagePack;
+    using System;
 
     public static class Enums
     {
@@ -38,5 +39,14 @@
     {
         public string Message { get; set; }
         public bool Success { get; set; } = true;
+    }
+
+    [MessagePackObject(true)]
+    public class BaseDbDto : GeneralResponse
+    {
+        public int? EId { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string Name { get; set; }
     }
 }

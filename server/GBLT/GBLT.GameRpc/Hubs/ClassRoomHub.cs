@@ -153,7 +153,7 @@ namespace RpcService.Hub
 
             if (cp != null)
             {
-                var id = cp.Claims.First(c => c.Type == ClaimTypes.NameIdentifier);
+                var id = cp.Claims.First(c => c.Type == JwtClaimIdentifiers.Id);
                 return await _userDataService.Find(id.Value);
             }
             return null;

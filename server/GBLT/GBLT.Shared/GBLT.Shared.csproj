@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="..\..\..\game\GBLT_XR\UnityProjects\GBLT_Dev\Assets\_Project\Scripts\Shared\**\*.cs" />
+        <Compile Include="..\..\..\game\MRTK\UnityProjects\GBLT_MRTKDev\Assets\_Project\Scripts\Shared\**\*.cs" />
     </ItemGroup>
 
     <ItemGroup>
