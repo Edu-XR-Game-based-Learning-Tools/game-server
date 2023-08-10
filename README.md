@@ -16,8 +16,10 @@ dotnet mpc -i "./GBLT.Shared.csproj" -o "..\\..\\..\game\MRTK\UnityProjects\GBLT
 ```
     Connect to remote linux VM for server
     ssh -i PATH_TO_PRIVATE_KEY USERNAME@EXTERNAL_IP
+    ssh -i Tom-Csun-Linux.pem USERNAME@EXTERNAL_IP
     
     Run server
-    export ASPNETCORE_ENVIRONMENT=Production
-    dotnet run
+    GameRpc: cd project/game-server/server/GBLT/GBLT.GameRpc
+    WebAPI: cd project/game-server/server/GBLT/GBLT.WebAPI
+    dotnet watch run --launch-profile "Production"
 ```

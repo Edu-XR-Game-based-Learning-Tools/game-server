@@ -32,7 +32,6 @@ namespace WebAPI
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-
             services.AddDbContext<AppIdentityDbContext>(options =>
             {
                 options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("GBLT.Infrastructure"));

@@ -1,40 +1,50 @@
 {
-  "profiles": {
-    "GBLT.WebAPI": {
-      "commandName": "Project",
-      "launchUrl": "swagger",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "dotnetRunMessages": true,
-      "externalUrlConfiguration": true,
-      "hotReloadEnabled": true
+    "profiles": {
+        "GBLT.WebAPI": {
+            "commandName": "Project",
+            "launchUrl": "swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "dotnetRunMessages": true,
+            "externalUrlConfiguration": true,
+            "hotReloadEnabled": true
+        },
+        "Production": {
+            "commandName": "Project",
+            "launchUrl": "swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Production"
+            },
+            "dotnetRunMessages": true,
+            "externalUrlConfiguration": true,
+            "hotReloadEnabled": true
+        },
+        "IIS Express": {
+            "commandName": "IISExpress",
+            "launchUrl": "swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Production"
+            },
+            "externalUrlConfiguration": true
+        },
+        "WSL": {
+            "commandName": "WSL2",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "distributionName": ""
+        },
+        "Docker": {
+            "commandName": "Docker",
+            "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Production"
+            },
+            "publishAllPorts": true,
+            "useSSL": true
+        }
     },
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchUrl": "swagger",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Production"
-      },
-      "externalUrlConfiguration": true
-    },
-    "WSL": {
-      "commandName": "WSL2",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "distributionName": ""
-    },
-    "Docker": {
-      "commandName": "Docker",
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Production"
-      },
-      "publishAllPorts": true,
-      "useSSL": true
-    }
-  },
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
     "windowsAuthentication": false,
