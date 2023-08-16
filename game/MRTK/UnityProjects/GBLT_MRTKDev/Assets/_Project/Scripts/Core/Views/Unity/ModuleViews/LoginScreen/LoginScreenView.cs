@@ -23,6 +23,8 @@ namespace Core.View
         private IRpcAuthController _rpcAuthController;
         private UserAuthentication _userAuthentication;
 
+        [SerializeField][DebugOnly] private PressableButton _backBtn;
+
         [SerializeField][DebugOnly] private MRTKTMPInputField _usernameInput;
         [SerializeField][DebugOnly] private Transform _emailTip;
         [SerializeField][DebugOnly] private Transform _emailInputContainer;
@@ -53,6 +55,8 @@ namespace Core.View
 
         private void GetReferences()
         {
+            _backBtn = transform.Find("CanvasDialog/Canvas/Header/Back_Btn").GetComponent<PressableButton>();
+
             _usernameInput = transform.Find("CanvasDialog/Canvas/Content/Username_Input/InputField (TMP)").GetComponent<MRTKTMPInputField>();
             _emailTip = transform.Find("CanvasDialog/Canvas/Content/Email_Txt");
             _emailInputContainer = transform.Find("CanvasDialog/Canvas/Content/Email_Input");
@@ -111,6 +115,13 @@ namespace Core.View
 
         private void RegisterEvents()
         {
+            _backBtn.OnClicked.AddListener(async () =>
+            {
+                _gameStore.GState.RemoveModel<LoginScreenModel>();
+                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
+                    "", ViewName.Unity, ModuleName.LandingScreen);
+            });
+
             _loginBtn.OnClicked.AddListener(async () =>
             {
                 AuthenticationData data;

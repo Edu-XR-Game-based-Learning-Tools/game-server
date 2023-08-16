@@ -14,12 +14,11 @@ dotnet mpc -i "./GBLT.Shared.csproj" -o "..\\..\\..\game\MRTK\UnityProjects\GBLT
 
 ### Deployment
 ```
-    Connect to remote linux VM for server
+    Connect to remote linux VM for server and prerequisites
     ssh -i PATH_TO_PRIVATE_KEY USERNAME@EXTERNAL_IP
-    ssh -i Tom-Csun-Linux.pem USERNAME@EXTERNAL_IP
+    Install .NET SDK or .NET Runtime on Ubuntu 22.04: https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-2204
     
-    Run server
-    GameRpc: cd project/game-server/server/GBLT/GBLT.GameRpc
-    WebAPI: cd project/game-server/server/GBLT/GBLT.WebAPI
+    Run Server:
+    cd to server directory
     dotnet watch run --launch-profile "Production"
 ```

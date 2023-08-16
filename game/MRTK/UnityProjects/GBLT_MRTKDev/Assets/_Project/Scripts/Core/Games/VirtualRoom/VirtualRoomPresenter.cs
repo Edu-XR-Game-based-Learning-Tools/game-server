@@ -59,7 +59,7 @@ namespace Core.Framework
             _screenTex = new Texture2D(_screenRenderTexture.width, _screenRenderTexture.height);
             _screenMat.SetTexture("_EmissionMap", _screenTex);
 
-            //_classRoom.SetActive(false);
+            _classRoom.SetActive(false);
         }
 
         #region Setup Environment

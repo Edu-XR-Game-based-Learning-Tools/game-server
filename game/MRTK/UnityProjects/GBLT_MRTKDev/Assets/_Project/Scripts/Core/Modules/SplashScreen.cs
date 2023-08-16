@@ -19,7 +19,6 @@ namespace Core.Module
 
         protected override void OnViewReady()
         {
-            Debug.Log("OnViewReady");
         }
 
         protected override void OnDisposed()
