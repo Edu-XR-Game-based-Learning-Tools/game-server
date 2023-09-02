@@ -42,21 +42,16 @@ namespace Core.Framework
         {
             UnityEngine.Debug.Log($"Addressable url: {EnvSetting.AddressableProdUrl}");
             byte[] definitions = await _dataServiceController.LoadDefinitions();
-            UnityEngine.Debug.Log($"_dataServiceController.LoadDefinitions");
             ((RemoteDefinitionLoader)_definitionLoader).InitMemoryDefinitions(definitions);
 
-            UnityEngine.Debug.Log($"_definitionDataController.VerifyClient");
             await _definitionDataController.VerifyClient();
-            UnityEngine.Debug.Log($"_definitionDataController.VerifyClient");
             _virtualRoomPresenter.Init();
-            UnityEngine.Debug.Log($"_virtualRoomPresenter.Init");
 
             //await _gameStore.GetOrCreateModule<IDummy, DummyModel>(
             //    "", ViewName.Unity, ModuleName.Dummy);
 
             await _gameStore.GetOrCreateModule<SplashScreen, SplashScreenModel>(
                 "", ViewName.Unity, ModuleName.SplashScreen);
-            UnityEngine.Debug.Log($"_gameStore.GetOrCreateModule<SplashScreen, SplashScreenModel>(\r\n                \"\", ViewName.Unity, ModuleName.SplashScreen)");
 
             await _gameStore.GetOrCreateModule<Popup, PopupModel>(
                 "", ViewName.Unity, ModuleName.Popup);
@@ -64,7 +59,6 @@ namespace Core.Framework
                 "", ViewName.Unity, ModuleName.Toast);
             await _gameStore.GetOrCreateModule<Loading, LoadingModel>(
                 "", ViewName.Unity, ModuleName.Loading);
-            UnityEngine.Debug.Log($"Enter");
         }
 
         public void Out()

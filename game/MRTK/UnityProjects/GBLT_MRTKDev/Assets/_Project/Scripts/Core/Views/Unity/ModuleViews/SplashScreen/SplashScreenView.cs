@@ -24,7 +24,6 @@ namespace Core.View
         {
             _gameStore = gameStore;
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
-            Debug.Log("SplashScreenView");
         }
 
         private void RegisterEvents()
@@ -39,7 +38,6 @@ namespace Core.View
 
         public override void OnReady()
         {
-            Debug.Log("OnReady");
             _startBtn = transform.Find("CanvasDialog/Canvas/Horizontal/Start_Btn").GetComponent<PressableButton>();
 
             RegisterEvents();

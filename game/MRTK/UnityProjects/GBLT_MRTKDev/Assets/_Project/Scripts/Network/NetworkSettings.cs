@@ -4,23 +4,21 @@
     {
         Local,
         Develop,
+        Production,
         Stage,
         Distributed
-    }
-
-    public enum HostingEnvironment
-    {
-        Local = 0,
-        Develop,
-        Production,
-        Stage
     }
 
     [System.Serializable]
     public struct NetworkSettings
     {
         public HostingType HostType;
-        public HostingEnvironment HostEnv;
-        public string[] DefaultApiEndPoints;
+        [System.Serializable]
+        public class ThingWithArrays
+        {
+            public string[] Array;
+        }
+
+        public ThingWithArrays[] DefaultApiEndPoints;
     }
 }

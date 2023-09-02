@@ -20,7 +20,7 @@ namespace Core.Network
         public EndPointSwitcher(
             NetworkSettings netWorkSettings)
         {
-            _apiEndpoints = netWorkSettings.DefaultApiEndPoints;
+            _apiEndpoints = netWorkSettings.DefaultApiEndPoints[(int)netWorkSettings.HostType].Array;
         }
 
         public void UpdateEndPoints(string[] endpoints)
