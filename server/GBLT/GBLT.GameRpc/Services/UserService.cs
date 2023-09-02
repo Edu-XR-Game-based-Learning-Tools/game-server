@@ -37,6 +37,7 @@ namespace RpcService.Service
         {
             var header = Context.CallContext.RequestHeaders;
             var bytes = header.GetValueBytes("auth-token-bin");
+            if (bytes == null) return null;
             var token = Encoding.ASCII.GetString(bytes);
             var cp = _jwtTokenValidator.GetPrincipalFromToken(token);
 

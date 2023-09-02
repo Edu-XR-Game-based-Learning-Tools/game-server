@@ -7,6 +7,7 @@ using Core.Network;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
 using Microsoft.MixedReality.Toolkit.UX;
+using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
@@ -135,6 +136,12 @@ namespace Core.View
         {
             _joinBtn.OnClicked.AddListener(() =>
             {
+                if (_roomInputField.text.IsNullOrEmpty())
+                {
+                    _showToastPublisher.Publish(new ShowToastSignal(content: "Room Id Cannot Be Empty"));
+                    return;
+                }
+
                 _showPopupPublisher.Publish(new ShowPopupSignal(title: "Enter Your Name", yesContent: "Join", noContent: "Cancel", yesAction: async (value, _) =>
                 {
                     _showLoadingPublisher.Publish(new ShowLoadingSignal());

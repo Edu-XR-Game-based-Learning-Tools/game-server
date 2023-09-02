@@ -25,6 +25,9 @@ namespace Core.Framework
         private readonly IPublisher<GameScreenChangeSignal> _gameScreenChangePublisher;
 
         [Inject]
+        protected readonly IPublisher<ShowLoadingSignal> _showLoadingPublisher;
+
+        [Inject]
         protected readonly IPublisher<ShowToastSignal> _showToastPublisher;
 
         [Inject]
@@ -40,6 +43,7 @@ namespace Core.Framework
         public ScreenName CurrentScreenName => _currentScreen.Name;
 
         private List<ModuleName> _lastHideModules = new();
+        private ModuleName[] _hideModulesException = { ModuleName.Loading, ModuleName.Toast, ModuleName.Popup };
 
         public GameStore(
             Setting gameSetting,
@@ -125,6 +129,8 @@ namespace Core.Framework
         {
             foreach (var model in GState.Models.Values)
             {
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
                 if (modules != null && modules.Contains(model.Module.ModuleName) || !model.Module.ViewContext.View.activeInHierarchy) continue;
                 model.Module.ViewContext.View.SetActive(false);
                 _lastHideModules.Add(model.Module.ModuleName);
@@ -135,6 +141,8 @@ namespace Core.Framework
         {
             foreach (var model in GState.Models.Values)
             {
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
                 if (_lastHideModules.Contains(model.Module.ModuleName))
                 {
                     model.Module.ViewContext.View.SetActive(true);
@@ -192,7 +200,11 @@ namespace Core.Framework
         #region Utils
         public bool CheckShowToastIfNotSuccessNetwork(GeneralResponse response)
         {
-            if (!response.Success) _showToastPublisher.Publish(new ShowToastSignal(content: response.Message));
+            if (!response.Success)
+            {
+                _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+                _showToastPublisher.Publish(new ShowToastSignal(content: response.Message));
+            }
 
             return !response.Success;
         }

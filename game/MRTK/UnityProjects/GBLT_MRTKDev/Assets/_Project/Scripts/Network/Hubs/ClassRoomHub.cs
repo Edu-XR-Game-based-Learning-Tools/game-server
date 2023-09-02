@@ -49,7 +49,20 @@ namespace Shared.Network
         {
             _client = await _gRpcHubClient.Subscribe<IClassRoomHub, IClassRoomHubReceiver>(this, requiredAuthentication: false);
             _stayAliveHelper = new HubStayAliveHelper(() => _client.CmdToKeepAliveConnection().AsUniTask());
-            var response = await _client.JoinAsync(data);
+            RoomStatusResponse response;
+            try
+            {
+                response = await _client.JoinAsync(data);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log(ex);
+                response = new RoomStatusResponse()
+                {
+                    Message = ex.Message,
+                    Success = false,
+                };
+            }
             return response;
         }
 

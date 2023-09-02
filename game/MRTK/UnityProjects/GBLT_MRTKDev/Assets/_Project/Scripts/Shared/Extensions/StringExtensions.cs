@@ -6,6 +6,11 @@ namespace Shared.Extension
 {
     public static class StringExtensions
     {
+        public static bool IsNullOrEmpty(this string self)
+        {
+            return string.IsNullOrEmpty(self);
+        }
+
         /// <summary>
         /// Convert a list of objects into a lexical (comma-separated) list as a string.
         /// </summary>
