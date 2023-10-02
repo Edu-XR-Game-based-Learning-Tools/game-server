@@ -23,6 +23,7 @@ namespace Core.View
         private IRpcAuthController _rpcAuthController;
         private UserAuthentication _userAuthentication;
 
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
         [SerializeField][DebugOnly] private PressableButton _backBtn;
 
         [SerializeField][DebugOnly] private MRTKTMPInputField _usernameInput;
@@ -55,6 +56,7 @@ namespace Core.View
 
         private void GetReferences()
         {
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/Close_Btn").GetComponent<PressableButton>();
             _backBtn = transform.Find("CanvasDialog/Canvas/Header/Back_Btn").GetComponent<PressableButton>();
 
             _usernameInput = transform.Find("CanvasDialog/Canvas/Content/Username_Input/InputField (TMP)").GetComponent<MRTKTMPInputField>();
@@ -115,6 +117,10 @@ namespace Core.View
 
         private void RegisterEvents()
         {
+            _closeBtn.OnClicked.AddListener(() =>
+            {
+                _gameStore.HideCurrentModule(ModuleName.LoginScreen);
+            });
             _backBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LoginScreenModel>();

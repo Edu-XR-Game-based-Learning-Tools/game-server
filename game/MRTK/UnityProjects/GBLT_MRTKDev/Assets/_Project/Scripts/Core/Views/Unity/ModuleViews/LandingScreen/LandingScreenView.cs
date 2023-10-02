@@ -35,6 +35,8 @@ namespace Core.View
         private VirtualRoomPresenter _virtualRoomPresenter;
         private IUserDataController _userDataController;
 
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
+
         [SerializeField][DebugOnly] private MRTKTMPInputField _roomInputField;
         [SerializeField][DebugOnly] private PressableButton _joinBtn;
         [SerializeField][DebugOnly] private PressableButton _createBtn;
@@ -67,13 +69,15 @@ namespace Core.View
 
         private void GetReferences()
         {
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/Close_Btn").GetComponent<PressableButton>();
+
             _roomInputField = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/InputField/InputField (TMP)").GetComponent<MRTKTMPInputField>();
             _joinBtn = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/Join_Btn").GetComponent<PressableButton>();
             _createBtn = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/Create_Btn").GetComponent<PressableButton>();
 
-            _loginBtn = transform.Find("CanvasDialog/Canvas/Header/User/Login_Btn").GetComponent<PressableButton>();
-            _userBtn = transform.Find("CanvasDialog/Canvas/Header/User/IsLoggedIn/User_Btn").GetComponent<PressableButton>();
-            _userDropdown = transform.Find("CanvasDialog/Canvas/Header/User/IsLoggedIn/User_Dropdown");
+            _loginBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/Login_Btn").GetComponent<PressableButton>();
+            _userBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/IsLoggedIn/User_Btn").GetComponent<PressableButton>();
+            _userDropdown = transform.Find("CanvasDialog/Canvas/Header/RightSide/IsLoggedIn/User_Dropdown");
             _userDropdownActions = new bool[_userDropdown.childCount].Select((_, idx) => _userDropdown.GetChild(idx).GetComponent<PressableButton>()).ToArray();
 
             var toolContent = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
@@ -134,6 +138,11 @@ namespace Core.View
 
         private void RegisterEvents()
         {
+            _closeBtn.OnClicked.AddListener(() =>
+            {
+                _gameStore.HideCurrentModule(ModuleName.LandingScreen);
+            });
+
             _joinBtn.OnClicked.AddListener(() =>
             {
                 if (_roomInputField.text.IsNullOrEmpty())
@@ -258,13 +267,14 @@ namespace Core.View
 
         public void Refresh()
         {
+            bool isInRoomView = _userDataController.ServerData.IsInRoom;
             bool isInGameView = _userDataController.ServerData.IsInGame;
             _roomInputField.SetActive(!isInGameView);
             _joinBtn.SetActive(!isInGameView);
             _createBtn.SetActive(!isInGameView);
             _userDropdown.GetChild((int)LandingScreenUserDropdownActionType.Logout).SetActive(!isInGameView);
             foreach (var btn in _openToolBtns)
-                btn.SetActive(!isInGameView);
+                btn.SetActive(isInRoomView && !isInGameView);
 
             EnableIsSignIn();
         }

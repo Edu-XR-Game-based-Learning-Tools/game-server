@@ -3,6 +3,7 @@ using Core.EventSignal;
 using Core.Module;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
+using Shared.Extension;
 using Shared.Network;
 using System;
 using System.Collections.Generic;
@@ -44,6 +45,8 @@ namespace Core.Framework
 
         private List<ModuleName> _lastHideModules = new();
         private ModuleName[] _hideModulesException = { ModuleName.Loading, ModuleName.Toast, ModuleName.Popup };
+
+        public ModuleName? LastHiddenModule { get; private set; } = null;
 
         public GameStore(
             Setting gameSetting,
@@ -152,12 +155,13 @@ namespace Core.Framework
         }
 
         public async UniTask<TClass> GetOrCreateModule<TClass, TModel>(
-            string viewId,
-            ViewName viewName,
-            ModuleName moduleName)
+            string viewId = "",
+            ViewName viewName = ViewName.Unity,
+            ModuleName moduleName = ModuleName.SplashScreen)
             where TClass : IBaseModule
             where TModel : IModuleContextModel, new()
         {
+            ClearLastHiddenModule();
             if (GState.HasModel<TModel>())
             {
                 //_logger.Warning($"Dupplicate Found on Module: {typeof(TClass).ToString()}");
@@ -207,6 +211,50 @@ namespace Core.Framework
             }
 
             return !response.Success;
+        }
+
+        public void HideCurrentModule(ModuleName moduleName)
+        {
+            foreach (var model in GState.Models.Values)
+            {
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
+                if (model.Module.ModuleName == moduleName && model.Module.ViewContext.View.activeInHierarchy)
+                {
+                    model.Module.ViewContext.View.SetActive(false);
+                    LastHiddenModule = moduleName;
+                    break;
+                }
+            }
+        }
+
+        public void OpenLastHiddenModule()
+        {
+            foreach (var model in GState.Models.Values)
+            {
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
+                if (model.Module.ModuleName == LastHiddenModule && !model.Module.ViewContext.View.activeInHierarchy)
+                {
+                    model.Module.ViewContext.View.SetActive(true);
+                    break;
+                }
+            }
+        }
+
+        public void ClearLastHiddenModule()
+        {
+            foreach (var model in GState.Models.Values)
+            {
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
+                if (model.Module.ModuleName == LastHiddenModule && !model.Module.ViewContext.View.activeInHierarchy)
+                {
+                    GState.RemoveModel(model);
+                    break;
+                }
+            }
+            LastHiddenModule = null;
         }
         #endregion Utils
     }

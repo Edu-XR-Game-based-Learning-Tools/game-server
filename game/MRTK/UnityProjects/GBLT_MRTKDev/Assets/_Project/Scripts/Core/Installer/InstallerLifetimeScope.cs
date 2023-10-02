@@ -102,6 +102,9 @@ namespace Core.Framework
             builder.Register<IBaseScript, RoomStatusScript>(Lifetime.Scoped);
             builder.Register<IBaseModule, RoomStatus>(Lifetime.Scoped);
 
+            builder.Register<IBaseScript, QuizzesRoomStatusScript>(Lifetime.Scoped);
+            builder.Register<IBaseModule, QuizzesRoomStatus>(Lifetime.Scoped);
+
             // Utils
             builder.Register<IBaseScript, LoadingScript>(Lifetime.Scoped);
             builder.Register<IBaseModule, Loading>(Lifetime.Scoped);

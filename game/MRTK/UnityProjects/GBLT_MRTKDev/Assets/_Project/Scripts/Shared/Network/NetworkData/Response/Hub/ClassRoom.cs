@@ -12,6 +12,10 @@ namespace Shared.Network
         public string AvatarPath { get; set; } = Defines.PrefabKey.DefaultRoomAvatar;
         public Vec3D HeadRotation { get; set; }
         public bool IsHost => Index == -1;
+
+        // In Game Attributes
+        public int Score { get; set; }
+        public int Rank { get; set; }
     }
 
     [MessagePackObject(true)]

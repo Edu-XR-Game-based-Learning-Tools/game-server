@@ -17,7 +17,9 @@ namespace Core.View
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
 
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
         [SerializeField][DebugOnly] private PressableButton _backBtn;
+
         [SerializeField][DebugOnly] private VideoPlayer _videoPlayer;
         [SerializeField][DebugOnly] private TextMeshProUGUI _titleTxt;
         [SerializeField][DebugOnly] private TextMeshProUGUI _descriptionTxt;
@@ -35,7 +37,9 @@ namespace Core.View
 
         private void GetReferences()
         {
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/Close_Btn").GetComponent<PressableButton>();
             _backBtn = transform.Find("CanvasDialog/Canvas/Header/Back_Btn").GetComponent<PressableButton>();
+
             _videoPlayer = transform.Find("CanvasDialog/Canvas/Content/Content/Video").GetComponent<VideoPlayer>();
             _titleTxt = transform.Find("CanvasDialog/Canvas/Content/Content/Content/Title").GetComponent<TextMeshProUGUI>();
             _descriptionTxt = transform.Find("CanvasDialog/Canvas/Content/Content/Content/Description").GetComponent<TextMeshProUGUI>();
@@ -45,6 +49,10 @@ namespace Core.View
 
         private void RegisterEvents()
         {
+            _closeBtn.OnClicked.AddListener(() =>
+            {
+                _gameStore.HideCurrentModule(ModuleName.ToolDescription);
+            });
             _backBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<ToolDescriptionModel>();

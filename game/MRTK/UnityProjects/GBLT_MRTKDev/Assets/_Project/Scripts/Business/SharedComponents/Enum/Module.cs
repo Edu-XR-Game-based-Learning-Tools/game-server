@@ -16,6 +16,7 @@
         ToolDescription,
         SettingScreen,
         RoomStatus,
+        QuizzesRoomStatus,
 
         // Utils
         Loading,

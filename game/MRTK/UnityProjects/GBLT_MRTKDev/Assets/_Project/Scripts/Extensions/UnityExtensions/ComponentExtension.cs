@@ -25,5 +25,11 @@ namespace Core.Extension
         {
             return new Vec3D(vector3.x, vector3.y, vector3.z);
         }
+
+        public static Sprite TexToSprite(this Texture2D tex, float PixelsPerUnit = 100.0f, SpriteMeshType spriteType = SpriteMeshType.Tight)
+        {
+            Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0), PixelsPerUnit, 0, spriteType);
+            return newSprite;
+        }
     }
 }

@@ -47,7 +47,7 @@ namespace Core.Framework
                 RemoveModelByType(t);
             }
 
-            private void RemoveModel<T>(T model) where T : IModuleContextModel
+            public void RemoveModel<T>(T model) where T : IModuleContextModel
             {
                 Type t = model.GetType();
                 RemoveModelByType(t);
