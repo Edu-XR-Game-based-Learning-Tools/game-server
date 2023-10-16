@@ -1,5 +1,7 @@
-﻿using Core.EventSignal;
+﻿using Core.Business;
+using Core.EventSignal;
 using Core.Framework;
+using Core.Module;
 using Core.Network;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
@@ -15,6 +17,9 @@ namespace Shared.Network
     {
         private readonly IGRpcHubClient _gRpcHubClient;
         private readonly VirtualRoomPresenter _virtualRoomPresenter;
+        private readonly QuizzesHub _quizzesHub;
+        private readonly IUserDataController _userDataController;
+        private readonly GameStore _gameStore;
 
         [Inject]
         private readonly ISubscriber<OnVirtualRoomTickSignal> _onVirtualRoomTickSubscriber;
@@ -25,11 +30,17 @@ namespace Shared.Network
 
         private IClassRoomHub _client;
 
+        [Inject]
+        protected readonly IPublisher<ShowPopupSignal> _showPopupPublisher;
+
         public ClassRoomHub(
             IObjectResolver container)
         {
             _gRpcHubClient = container.Resolve<IGRpcHubClient>();
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
+            _quizzesHub = container.Resolve<QuizzesHub>();
+            _userDataController = container.Resolve<IUserDataController>();
+            _gameStore = container.Resolve<GameStore>();
         }
 
         public void Initialize()
@@ -45,9 +56,9 @@ namespace Shared.Network
 
         #region Methods send to server.
 
-        public async Task<RoomStatusResponse> JoinAsync(JoinClassRoomData data)
+        public async Task<RoomStatusResponse> JoinAsync(JoinClassRoomData data, bool requiredAuthentication = false)
         {
-            _client = await _gRpcHubClient.Subscribe<IClassRoomHub, IClassRoomHubReceiver>(this, requiredAuthentication: false);
+            _client = await _gRpcHubClient.Subscribe<IClassRoomHub, IClassRoomHubReceiver>(this, requiredAuthentication: requiredAuthentication);
             _stayAliveHelper = new HubStayAliveHelper(() => _client.CmdToKeepAliveConnection().AsUniTask());
             RoomStatusResponse response;
             try
@@ -77,6 +88,19 @@ namespace Shared.Network
             return _client.LeaveAsync();
         }
 
+        public async Task InviteToGame(QuizzesStatusResponse quizzesResponse)
+        {
+            await _client.InviteToGame(new InviteToGameData()
+            {
+                RoomId = quizzesResponse.Id,
+            });
+        }
+
+        public async Task UpdateAvatar(string name, string modelPath, string avatarPath)
+        {
+            await _client.UpdateAvatar(name, modelPath, avatarPath);
+        }
+
         #endregion Methods send to server.
 
         // dispose client-connection before channel.ShutDownAsync is important!
@@ -95,17 +119,19 @@ namespace Shared.Network
 
         #region Receivers of message from server.
 
-        public void OnJoin(PublicUserData user)
+        public void OnJoin(RoomStatusResponse status, PublicUserData user)
         {
             Debug.Log("Join User:" + user.Name);
 
+            _userDataController.ServerData.RoomStatus.RoomStatus = status;
             _virtualRoomPresenter.OnJoin(user);
         }
 
-        public void OnLeave(PublicUserData user)
+        public void OnLeave(RoomStatusResponse status, PublicUserData user)
         {
             Debug.Log("Leave User:" + user.Name);
 
+            _userDataController.ServerData.RoomStatus.RoomStatus = status;
             _virtualRoomPresenter.OnLeave(user);
         }
 
@@ -117,6 +143,24 @@ namespace Shared.Network
         public void OnTick(string message)
         {
             Debug.Log(message);
+        }
+
+        public void OnInviteToGame(InviteToGameData data, PublicUserData inviter)
+        {
+            _showPopupPublisher.Publish(new ShowPopupSignal(title: $"Host invite you to {data.ToolType} tool, Do you accept it?", yesContent: "Yes", noContent: "No", yesAction: async (value1, value2) =>
+            {
+                QuizzesStatusResponse response = await _quizzesHub.JoinAsync(data.JoinQuizzesData);
+                _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
+                _gameStore.RemoveCurrentModel();
+                await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                    "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
+            }, noAction: (_, _) => { }));
+        }
+
+        public void OnUpdateAvatar(PublicUserData user)
+        {
+            _virtualRoomPresenter.OnUpdateAvatar(user);
         }
 
         #endregion Receivers of message from server.

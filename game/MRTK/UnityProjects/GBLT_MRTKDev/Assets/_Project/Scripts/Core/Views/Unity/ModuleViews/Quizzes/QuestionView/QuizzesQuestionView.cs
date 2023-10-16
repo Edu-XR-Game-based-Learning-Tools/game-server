@@ -21,13 +21,13 @@ namespace Core.View
     [System.Serializable]
     public class ObjectQuizVisual : SubView
     {
-        [SerializeField][DebugOnly] private Image _imageObject2D;
-        [SerializeField][DebugOnly] private Transform _rtObject3D;
-        [SerializeField][DebugOnly] private PressableButton _imageToggleBtn;
-        [SerializeField][DebugOnly] private PressableButton _3dToggleBtn;
-        [SerializeField][DebugOnly] private bool _isImageToggle = true;
+        [SerializeField][DebugOnly] protected Image _imageObject2D;
+        [SerializeField][DebugOnly] protected Transform _rtObject3D;
+        [SerializeField][DebugOnly] protected PressableButton _imageToggleBtn;
+        [SerializeField][DebugOnly] protected PressableButton _3dToggleBtn;
+        [SerializeField][DebugOnly] protected bool _isImageToggle = true;
 
-        public ObjectQuizVisual(Transform transform, string prefix = "Content/Layout/") : base(transform)
+        public ObjectQuizVisual(Transform transform, IObjectResolver container, string prefix = "Content/Layout/") : base(transform, container)
         {
             _imageObject2D = transform.Find($"{prefix}/Visual/Image").GetComponent<Image>();
             _rtObject3D = transform.Find($"{prefix}/Visual/RT_3D");
@@ -73,8 +73,9 @@ namespace Core.View
         {
             [SerializeField][DebugOnly] private TextMeshProUGUI _noQuestionTxt;
             [SerializeField][DebugOnly] private PressableButton _nextBtn;
+            [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public HeaderView(Transform transform) : base(transform)
+            public HeaderView(Transform transform, IObjectResolver container) : base(transform, container)
             {
                 _noQuestionTxt = transform.Find("Header/NoQuestion_Txt").GetComponent<TextMeshProUGUI>();
                 _nextBtn = transform.Find("Header/Next_Btn").GetComponent<PressableButton>();
@@ -82,10 +83,18 @@ namespace Core.View
                 RegisterEvents();
             }
 
+            public HeaderView Init(QuizzesQuestionView rootView)
+            {
+                _rootView = rootView;
+
+                return this;
+            }
+
             public override void RegisterEvents()
             {
                 _nextBtn.OnClicked.AddListener(() =>
                 {
+                    _rootView.NextQuestion();
                 });
             }
 
@@ -101,10 +110,10 @@ namespace Core.View
             [SerializeField][DebugOnly] private TextMeshProUGUI _questionTxt;
             [SerializeField][DebugOnly] private Microsoft.MixedReality.Toolkit.UX.Slider _progressSlider;
 
-            [SerializeField] private float _previewDuration;
+            [SerializeField] private float _previewDuration = 10f;
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public PreviewView(Transform transform) : base(transform)
+            public PreviewView(Transform transform, IObjectResolver container) : base(transform, container)
             {
                 _questionTxt = transform.Find("Content/Question_Txt").GetComponent<TextMeshProUGUI>();
                 _progressSlider = transform.Find("Footer/Slider").GetComponent<Microsoft.MixedReality.Toolkit.UX.Slider>();
@@ -119,12 +128,14 @@ namespace Core.View
                 return this;
             }
 
-            public void UpdateContent(string question)
+            public async UniTask UpdateContent(QuizDto data)
             {
-                _questionTxt.text = question;
+                _questionTxt.text = data.Question;
+                _imageObject2D.sprite = await IMG2Sprite.FetchImageSprite(data.Image);
+
                 DOTween.To(() => _progressSlider.Value, (value) => _progressSlider.Value = value, 1f, _previewDuration).onComplete = () =>
                 {
-                    _rootView.OnDoneShowPreview();
+                    _rootView.DonePreview();
                 };
             }
         }
@@ -145,7 +156,7 @@ namespace Core.View
 
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public QuestionView(Transform transform) : base(transform, "Countdown/Content/Layout/")
+            public QuestionView(Transform transform, IObjectResolver container) : base(transform, container, "Countdown/Content/Layout/")
             {
                 countdownTransform = transform.Find("Countdown");
                 resultTransform = transform.Find("Result");
@@ -205,19 +216,33 @@ namespace Core.View
                 return this;
             }
 
-            public void StartCountdown(int duration)
+            private void StartCountdown(int duration)
             {
                 _countdownTxt.text = $"{duration}";
                 DOTween.To(() => int.Parse(_countdownTxt.text), (value) => _countdownTxt.text = $"{value}", 0, duration).onComplete = () =>
                 {
-                    _rootView.OnEndQuestion();
+                    _rootView.EndQuestion();
                 };
             }
 
-            public void UpdateContent(string question, int answerAmount)
+            public async UniTask UpdateContent(QuizDto data, int answerAmount = 0)
             {
-                _questionTxt.text = question;
-                _noAnswerTxt.text = $"{answerAmount}";
+                _questionTxt.text = data.Question;
+                _noAnswerTxt.text = $"Answer: {answerAmount}";
+                for (int idx = 0; idx < _optionTransforms.Length; idx++)
+                {
+                    _optionTransforms[idx].SetActive(idx < data.Answers.Length);
+                    if (idx >= data.Answers.Length) continue;
+                    _optionTransforms[idx].Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = data.Answers[idx];
+                }
+                _imageObject2D.sprite = await IMG2Sprite.FetchImageSprite(data.Image);
+
+                StartCountdown(data.Duration);
+            }
+
+            public void IncreaseNoAnswer()
+            {
+                _noAnswerTxt.text = $"Answer: {int.Parse(_noAnswerTxt.text) + 1}";
             }
         }
 
@@ -225,13 +250,15 @@ namespace Core.View
         public class ScoreboardView : SubView
         {
             [SerializeField][DebugOnly] protected Transform _scrollContent;
+            protected UserDataController _userDataController;
 
-            public ScoreboardView(Transform transform, string scrollPrefix = "Content/") : base(transform)
+            public ScoreboardView(Transform transform, IObjectResolver container, string scrollPrefix = "Content/") : base(transform, container)
             {
+                _userDataController = container.Resolve<IUserDataController>() as UserDataController;
                 _scrollContent = transform.Find($"{scrollPrefix}/Scroll View/Viewport/Content");
             }
 
-            public async UniTask UpdateData(RoomStatusVM roomStatus, PublicUserData[] quizPlayers = null)
+            public async UniTask UpdateData(RoomStatusVM roomStatus, QuizzesUserData[] quizPlayers = null)
             {
                 quizPlayers ??= roomStatus.InGameStatus.AllInRoom.OrderByDescending(ele =>
                      ele.Score).ToArray();
@@ -248,8 +275,8 @@ namespace Core.View
                         Instantiate(_scrollContent.GetChild(0), _scrollContent);
 
                     var record = _scrollContent.GetChild(idx);
-                    record.Find("Avatar").GetComponent<Image>().sprite = await roomStatus.LocalUserCache.GetUserAvatar(quizPlayers[idx].AvatarPath);
-                    record.Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].Name;
+                    record.Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetUserAvatar(quizPlayers[idx].UserData.AvatarPath);
+                    record.Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].UserData.Name;
                     record.Find("Score_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Score}";
                 }
             }
@@ -260,7 +287,7 @@ namespace Core.View
         {
             [SerializeField][DebugOnly] protected Transform[] _top3 = new Transform[3];
 
-            public LeaderBoardView(Transform transform) : base(transform, "Footer/")
+            public LeaderBoardView(Transform transform, IObjectResolver container) : base(transform, container, "Footer/")
             {
                 _top3[0] = transform.Find("Content/Layout").GetChild(1);
                 _top3[1] = transform.Find("Content/Layout").GetChild(2);
@@ -273,8 +300,8 @@ namespace Core.View
                      ele.Score).ToArray();
                 for (int idx = 0; idx < _top3.Length; idx++)
                 {
-                    _top3[idx].Find("Avatar").GetComponent<Image>().sprite = await roomStatus.LocalUserCache.GetUserAvatar(quizPlayers[idx].AvatarPath);
-                    _top3[idx].Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].Name;
+                    _top3[idx].Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetUserAvatar(quizPlayers[idx].UserData.AvatarPath);
+                    _top3[idx].Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].UserData.Name;
                     _top3[idx].Find("Score_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Score}";
                     _top3[idx].Find("Rank_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Rank}";
                 }
@@ -283,10 +310,12 @@ namespace Core.View
             }
         }
 
+        private IObjectResolver _container;
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
         private VirtualRoomPresenter _virtualRoomPresenter;
         private IUserDataController _userDataController;
+        private QuizzesHub _quizzesHub;
 
         [SerializeField][DebugOnly] private Transform _object3DContainer;
 
@@ -301,21 +330,25 @@ namespace Core.View
             GameStore gameStore,
             IObjectResolver container)
         {
+            _container = container;
             _gameStore = gameStore;
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _userDataController = container.Resolve<IUserDataController>();
+            _quizzesHub = container.Resolve<QuizzesHub>();
+
+            transform.SetActive(false);
         }
 
         private void GetReferences()
         {
             _object3DContainer = transform.Find("3D_Renderer/Object");
 
-            _headerView = new(transform.Find("Canvas/Header"));
-            _previewView = new(transform.Find("Canvas/Preview"));
-            _questionView = new(transform.Find("Canvas/Question"));
-            _scoreboardView = new(transform.Find("Canvas/Scoreboard"));
-            _leaderBoardView = new(transform.Find("Canvas/LeaderBoard"));
+            _headerView = new(transform.Find("Canvas/Header"), _container);
+            _previewView = new(transform.Find("Canvas/Preview"), _container);
+            _questionView = new(transform.Find("Canvas/Question"), _container);
+            _scoreboardView = new(transform.Find("Canvas/Scoreboard"), _container);
+            _leaderBoardView = new(transform.Find("Canvas/LeaderBoard"), _container);
         }
 
         public override void OnReady()
@@ -325,12 +358,61 @@ namespace Core.View
             Refresh();
         }
 
-        public void OnDoneShowPreview()
+        public async UniTask SetupQuestion(QuizCollectionDto collection, int questionIdx = 0)
         {
+            _headerView.UpdateContent($"{questionIdx + 1}/{collection.Quizzes.Length}");
+            _ = _previewView.UpdateContent(collection.Quizzes[questionIdx]);
+            _ = _questionView.UpdateContent(collection.Quizzes[questionIdx]);
+            _object3DContainer.Find("Object").GetComponent<MeshFilter>().sharedMesh = await MeshFromURL.FetchModel(collection.Quizzes[questionIdx].Model);
         }
 
-        public void OnEndQuestion()
+        public async UniTask StartGame(QuizCollectionDto collection)
         {
+            transform.SetActive(true);
+            await _quizzesHub.StartGame(collection);
+            _previewView.Transform.SetActive(true);
+            _questionView.Transform.SetActive(false);
+            _scoreboardView.Transform.SetActive(false);
+            _leaderBoardView.Transform.SetActive(false);
+
+            _ = SetupQuestion(collection);
+        }
+
+        public async void DonePreview()
+        {
+            await _quizzesHub.DonePreview();
+            _previewView.Transform.SetActive(false);
+            _questionView.Transform.SetActive(true);
+        }
+
+        public async void EndQuestion()
+        {
+            await _quizzesHub.EndQuestion();
+            _questionView.Transform.SetActive(false);
+            _scoreboardView.Transform.SetActive(true);
+        }
+
+        public async void NextQuestion()
+        {
+            QuizzesStatusResponse status = _userDataController.ServerData.RoomStatus.InGameStatus;
+            if (status.JoinQuizzesData.CurrentQuestionIdx < status.QuizCollection.Quizzes.Length - 1)
+            {
+                await _quizzesHub.NextQuestion();
+                await SetupQuestion(status.QuizCollection, (int)status.JoinQuizzesData.CurrentQuestionIdx);
+                _scoreboardView.Transform.SetActive(false);
+                _previewView.Transform.SetActive(true);
+            }
+            else
+            {
+                await _quizzesHub.EndQuestion();
+                _scoreboardView.Transform.SetActive(false);
+                _leaderBoardView.Transform.SetActive(true);
+            }
+        }
+
+        public void OnAnswer(AnswerData _)
+        {
+            _questionView.IncreaseNoAnswer();
         }
 
         public void Refresh()

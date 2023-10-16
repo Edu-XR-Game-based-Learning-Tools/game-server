@@ -31,5 +31,11 @@ namespace Core.Extension
             Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0), PixelsPerUnit, 0, spriteType);
             return newSprite;
         }
+
+        public static Color HexToColor(this string hex)
+        {
+            ColorUtility.TryParseHtmlString(hex, out var color);
+            return color;
+        }
     }
 }

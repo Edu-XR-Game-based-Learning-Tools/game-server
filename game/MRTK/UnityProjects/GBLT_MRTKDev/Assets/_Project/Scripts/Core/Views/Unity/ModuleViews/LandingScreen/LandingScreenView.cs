@@ -6,6 +6,7 @@ using Core.Module;
 using Core.Network;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
+using MessagePipe;
 using Microsoft.MixedReality.Toolkit.UX;
 using Shared.Extension;
 using Shared.Network;
@@ -32,6 +33,7 @@ namespace Core.View
         private AudioPoolManager _audioPoolManager;
         private UserAuthentication _userAuthentication;
         private ClassRoomHub _classRoomHub;
+        private QuizzesHub _quizzesHub;
         private VirtualRoomPresenter _virtualRoomPresenter;
         private IUserDataController _userDataController;
 
@@ -63,6 +65,7 @@ namespace Core.View
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
             _userAuthentication = container.Resolve<UserAuthentication>();
             _classRoomHub = container.Resolve<ClassRoomHub>();
+            _quizzesHub = container.Resolve<QuizzesHub>();
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _userDataController = container.Resolve<IUserDataController>();
         }
@@ -109,8 +112,8 @@ namespace Core.View
             };
 
             _gameStore.GState.RemoveModel<LandingScreenModel>();
-            (await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                "", ViewName.Unity, ModuleName.RoomStatus)).Model.Refresh();
+            await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
+                 "", ViewName.Unity, ModuleName.RoomStatus);
 
             await _virtualRoomPresenter.Spawn();
         }
@@ -180,7 +183,7 @@ namespace Core.View
                     {
                         Password = value1,
                         Amount = int.Parse(value2),
-                    });
+                    }, true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                         return;
@@ -188,8 +191,7 @@ namespace Core.View
                     await OnSuccessJoinRoom(response);
 
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
-                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Enter Number of Slot" }));
-
+                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Capacity (24-48, Default: 24)" }));
             });
 
             _loginBtn.OnClicked.AddListener(async () =>
@@ -234,9 +236,16 @@ namespace Core.View
             {
                 _openToolBtns[idx].OnClicked.AddListener(async () =>
                 {
+                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData());
+
+                    if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                        return;
+
+                    _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
-                    await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                        "", ViewName.Unity, ModuleName.RoomStatus);
+                    await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                        "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
                 });
             }
 

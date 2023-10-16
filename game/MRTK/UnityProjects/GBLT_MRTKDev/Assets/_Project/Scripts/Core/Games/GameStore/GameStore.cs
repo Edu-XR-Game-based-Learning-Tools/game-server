@@ -199,6 +199,12 @@ namespace Core.Framework
             GState.RemoveAllModules();
         }
 
+        public void RemoveCurrentModel()
+        {
+            IModuleContextModel currentModel = GetRecentModuleExceptUtils();
+            if (currentModel != null) GState.RemoveModel(currentModel);
+        }
+
         #endregion Manipulate MVC pattern
 
         #region Utils
@@ -237,12 +243,13 @@ namespace Core.Framework
                 if (model.Module.ModuleName == LastHiddenModule && !model.Module.ViewContext.View.activeInHierarchy)
                 {
                     model.Module.ViewContext.View.SetActive(true);
+                    LastHiddenModule = null;
                     break;
                 }
             }
         }
 
-        public void ClearLastHiddenModule()
+        private void ClearLastHiddenModule()
         {
             foreach (var model in GState.Models.Values)
             {
@@ -255,6 +262,17 @@ namespace Core.Framework
                 }
             }
             LastHiddenModule = null;
+        }
+
+        private IModuleContextModel GetRecentModule()
+        {
+            return GState.ModelStacks.Last();
+        }
+
+        private IModuleContextModel GetRecentModuleExceptUtils()
+        {
+            IModuleContextModel model = GetRecentModule();
+            return _hideModulesException.Contains(model.Module.ModuleName) ? null : model;
         }
         #endregion Utils
     }

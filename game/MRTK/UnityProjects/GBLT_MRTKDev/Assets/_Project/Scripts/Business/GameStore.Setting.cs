@@ -7,6 +7,6 @@
         public const string DefinitionUrl = "/ExternalData/Entities/";
         public const string BaseUrlServices = "https://localhost:8787/";
         public const string BaseUrlHubs = "https://localhost:8787/";
-        public const string Version = "1.9";
+        public const string Version = "1.0";
     }
 }

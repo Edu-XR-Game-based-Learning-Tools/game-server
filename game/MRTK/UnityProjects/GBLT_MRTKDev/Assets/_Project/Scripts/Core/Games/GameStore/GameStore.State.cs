@@ -1,4 +1,5 @@
 ﻿using Core.Business;
+using Shared.Extension;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace Core.Framework
         public class ModelState
         {
             public Dictionary<Type, IModuleContextModel> Models = new();
+            public List<IModuleContextModel> ModelStacks = new();
 
             public ModelState()
             {
@@ -38,6 +40,7 @@ namespace Core.Framework
             {
                 TModel model = new();
                 Models.Add(model.GetType(), model);
+                ModelStacks.Add(model);
                 return model;
             }
 
@@ -59,6 +62,7 @@ namespace Core.Framework
                 {
                     Models[t].Module.Remove();
                     Models.Remove(t);
+                    ModelStacks.RemoveWhere((ele) => ele.GetType() == t);
                 }
             }
 

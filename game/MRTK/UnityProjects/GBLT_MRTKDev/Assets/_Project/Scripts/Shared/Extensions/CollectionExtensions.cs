@@ -1196,5 +1196,18 @@ namespace Shared.Extension
             }
             return result;
         }
+
+        public static void RemoveWhere<T>(this ICollection<T> collection, Func<T, bool> predicate)
+        {
+            for (int idx = 0; idx < collection.Count; idx++)
+            {
+                T element = collection.ElementAt(idx);
+                if (predicate(element))
+                {
+                    collection.Remove(element);
+                    idx--;
+                }
+            }
+        }
     }
 }

@@ -34,6 +34,7 @@
         public string ApiBase { get; set; }
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class GeneralResponse
     {

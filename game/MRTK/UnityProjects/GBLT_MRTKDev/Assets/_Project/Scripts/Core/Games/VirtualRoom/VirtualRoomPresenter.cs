@@ -2,6 +2,7 @@
 using Core.EventSignal;
 using Core.Extension;
 using Core.Utility;
+using Core.View;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
 using Shared;
@@ -24,6 +25,9 @@ namespace Core.Framework
         [Inject]
         private readonly IPublisher<OnVirtualRoomTickSignal> _onUserTransformChangePublisher;
 
+        [Inject]
+        protected readonly IPublisher<ShowPopupSignal> _showPopupPublisher;
+
         private Transform _classRoom;
         private ClassRoomDefinition _classRoomDefinition;
         private Transform _seatContainer;
@@ -31,6 +35,7 @@ namespace Core.Framework
         private Transform _teacherCharacter;
         private Transform[] _studentsCharacter;
 
+        private Transform _MRTKRig;
         private Camera _shareScreenCam;
         private RenderTexture _screenRenderTexture;
         private Material _screenMat;
@@ -52,6 +57,7 @@ namespace Core.Framework
             _classRoom = GameObject.Find("ClassRoom").transform;
             _seatContainer = _classRoom.Find("Seats");
 
+            _MRTKRig = GameObject.Find("MRTK XR Rig").transform;
             _shareScreenCam = GameObject.Find("MRTK XR Rig/Camera Offset/ShareScreenCam").GetComponent<Camera>();
             _screenRenderTexture = _shareScreenCam.targetTexture;
             _screenMat = _classRoom.Find("Environment/Projector/Screen/16:9").GetComponent<MeshRenderer>().material;
@@ -103,17 +109,17 @@ namespace Core.Framework
         private async UniTask SetupCharacter(PublicUserData user = null)
         {
             var data = user ?? _userDataController.ServerData.RoomStatus.RoomStatus.Self;
-            var prefabPath = !string.IsNullOrEmpty(data.AvatarPath)
-                ? data.AvatarPath : Defines.PrefabKey.DefaultRoomAvatar;
+            var prefabPath = !string.IsNullOrEmpty(data.ModelPath)
+                ? data.ModelPath : Defines.PrefabKey.DefaultRoomModel;
 
             Transform parent = OnLeave(data);
 
             GameObject prefab = await _bundleLoader.LoadAssetAsync<GameObject>(prefabPath);
             var obj = _container.Instantiate(prefab, parent).transform;
-            obj.transform.eulerAngles = user.HeadRotation.ToVector3();
+            obj.transform.eulerAngles = data.HeadRotation.ToVector3();
             if (data.IsHost) _teacherCharacter = obj;
             else _studentsCharacter[data.Index] = obj;
-            Camera.main.transform.parent.parent.position = obj.position;
+            _MRTKRig.position = obj.Find("EyeCamPosition").position;
         }
 
         public async UniTask Spawn() // 24 - 48
@@ -135,10 +141,16 @@ namespace Core.Framework
             await SetupCharacter(user);
         }
 
-        public Transform OnLeave(PublicUserData user = null)
+        public Transform GetCharacterParent(PublicUserData user)
         {
             Transform userSeat = user.IsHost ? _teacherSeatTransform : _seatContainer.GetChild(user.Index);
             Transform parent = userSeat.Find("CharPosition");
+            return parent;
+        }
+
+        public Transform OnLeave(PublicUserData user = null)
+        {
+            Transform parent = GetCharacterParent(user);
 
             foreach (Transform child in parent)
                 Object.Destroy(child.gameObject);
@@ -175,7 +187,8 @@ namespace Core.Framework
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(new VirtualRoomTickData
             {
                 HeadRotation = _teacherCharacter.eulerAngles.ToVec3D(),
-                Texture = texture.EncodeToJPG(),
+                Texture = _userDataController.ServerData.IsSharing ? null : texture.EncodeToJPG(),
+                IsSharing = _userDataController.ServerData.IsSharing,
             }));
         }
 
@@ -199,5 +212,87 @@ namespace Core.Framework
             if (response.Texture != null)
                 _screenTex.LoadImage(response.Texture);
         }
+
+        public async void OnUpdateAvatar(PublicUserData user)
+        {
+            await SetupCharacter(user);
+        }
+
+        #region Quizzes
+
+        private QuizzesQuestionView _quizzesQuestionView;
+        private QuizzesAnswerView _quizzesAnswerView;
+
+        private PrivateUserData _self => _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+
+        private Transform GetSelfTableUI()
+        {
+            Transform userSeat = _self.IsHost ? _teacherSeatTransform : _seatContainer.GetChild(_self.Index);
+            Transform ui = userSeat.Find("UI");
+            return ui;
+        }
+
+        public void OnJoinQuizzes(QuizzesUserData _)
+        {
+            if (_self.IsHost)
+            {
+                _quizzesQuestionView = GetSelfTableUI().GetComponent<QuizzesQuestionView>();
+            }
+            else
+            {
+                _quizzesAnswerView = GetSelfTableUI().GetComponent<QuizzesAnswerView>();
+            }
+        }
+
+        public void OnLeaveQuizzes(QuizzesUserData _)
+        {
+            if (_self.IsHost)
+                OnEndQuizQuizzes();
+        }
+
+        #region Only Host
+
+        public async UniTask StartGame(QuizCollectionDto collection)
+        {
+            await _quizzesQuestionView.StartGame(collection);
+        }
+
+        public void OnAnswerQuizzes(AnswerData data)
+        {
+            _quizzesQuestionView.OnAnswer(data);
+        }
+
+        #endregion Only Host
+
+        #region Only player
+
+        public void OnStartQuizzes(QuizzesStatusResponse _)
+        {
+            _quizzesAnswerView.OnStart();
+        }
+
+        public void OnDonePreviewQuizzes()
+        {
+            _quizzesAnswerView.OnDonePreview();
+        }
+
+        public void OnEndQuestionQuizzes()
+        {
+            _quizzesAnswerView.OnEndQuestion();
+        }
+
+        public void OnNextQuestionQuizzes(QuizzesStatusResponse _)
+        {
+            _quizzesAnswerView.OnNextQuestion();
+        }
+
+        public void OnEndQuizQuizzes()
+        {
+            _quizzesAnswerView.OnEndQuiz();
+        }
+
+        #endregion Only player
+
+        #endregion Quizzes
     }
 }

@@ -1,8 +1,5 @@
-﻿using Core.Utility;
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using MessagePack;
-using System.Collections.Generic;
-using UnityEngine;
 
 namespace Shared.Network
 {
@@ -14,23 +11,10 @@ namespace Shared.Network
         public string UserName { get; set; }
     }
 
-    public class LocalUserCache
-    {
-        public Dictionary<string, Sprite> AvatarMap = new();
-
-        public async UniTask<Sprite> GetUserAvatar(string path)
-        {
-            if (!AvatarMap.ContainsKey(path))
-                AvatarMap[path] = await IMG2Sprite.FetchImageSprite(path);
-            return AvatarMap[path];
-        }
-    }
-
     public class RoomStatusVM
     {
         public RoomStatusResponse RoomStatus { get; set; }
-        public InGameStatusResponse InGameStatus { get; set; }
-        public LocalUserCache LocalUserCache { get; set; }
+        public QuizzesStatusResponse InGameStatus { get; set; }
     }
 
     public class UserServerEntity

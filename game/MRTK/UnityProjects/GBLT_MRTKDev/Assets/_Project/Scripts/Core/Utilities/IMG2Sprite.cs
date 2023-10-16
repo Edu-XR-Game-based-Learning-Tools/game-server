@@ -1,6 +1,9 @@
-﻿using Core.Extension;
+﻿using Assimp;
+using Core.Extension;
 using Cysharp.Threading.Tasks;
+using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -86,5 +89,49 @@ namespace Core.Utility
         }
 
         #endregion Local File
+    }
+
+    public static class MeshFromURL
+    {
+        private static readonly AssimpContext _importer = new();
+
+        public static async UniTask<UnityEngine.Mesh> FetchModel(string url)
+        {
+            using UnityWebRequest webRequest = UnityWebRequest.Get(url);
+            await webRequest.SendWebRequest();
+
+#if UNITY_2020_2_OR_NEWER
+            if (webRequest.result == UnityWebRequest.Result.ProtocolError || webRequest.result == UnityWebRequest.Result.ConnectionError)
+#else
+                    if (webRequest.isHttpError || webRequest.isNetworkError)
+#endif
+            {
+                Debug.LogError("SendWebRequest error: " + webRequest.error + " for URL " + url);
+            }
+            else
+            {
+                byte[] results = webRequest.downloadHandler.data;
+                using MemoryStream stream = new(results);
+                Scene scene = _importer.ImportFileFromStream(stream);
+
+                if (scene.Meshes.Count > 0)
+                {
+                    Assimp.Mesh assimpMesh = scene.Meshes.First();
+                    UnityEngine.Mesh mesh = new()
+                    {
+                        vertices = assimpMesh.Vertices.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
+                        triangles = assimpMesh.Faces.SelectMany(ele => ele.Indices).ToArray(),
+                        normals = assimpMesh.Normals.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
+                    };
+                    if (assimpMesh.TextureCoordinateChannels.Length > 0)
+                        mesh.uv = assimpMesh.TextureCoordinateChannels[0].Select(ele => new Vector2(ele.X, ele.Y)).ToArray();
+                    if (assimpMesh.VertexColorChannels.Length > 0)
+                        mesh.colors = assimpMesh.VertexColorChannels[0].Select(ele => new Color(ele.R, ele.G, ele.B, ele.A)).ToArray();
+
+                    return mesh;
+                }
+            }
+            return null;
+        }
     }
 }

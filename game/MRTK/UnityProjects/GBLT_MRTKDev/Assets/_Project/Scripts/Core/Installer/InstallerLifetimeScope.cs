@@ -172,6 +172,7 @@ namespace Core.Framework
 
             builder.RegisterComponentInHierarchy<PoolObjectMono>();
             builder.RegisterComponentInHierarchy<AudioController>();
+            builder.RegisterComponentInHierarchy<HandMenuController>();
         }
 
         private void InstallScriptableObject()
@@ -242,6 +243,7 @@ namespace Core.Framework
             builder.Register<GRpcRetryHandlerFilter>(Lifetime.Singleton);
 
             builder.Register<ClassRoomHub>(Lifetime.Singleton);
+            builder.Register<QuizzesHub>(Lifetime.Singleton);
 
             builder.Register<UserAuthentication>(Lifetime.Singleton);
         }

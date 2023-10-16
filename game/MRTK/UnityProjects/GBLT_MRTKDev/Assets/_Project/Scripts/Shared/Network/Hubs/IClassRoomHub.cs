@@ -12,6 +12,10 @@ namespace Shared.Network
 
         Task LeaveAsync();
 
+        Task InviteToGame(InviteToGameData data);
+
+        Task UpdateAvatar(string name, string modelPath, string avatarPath);
+
         Task VirtualRoomTickSync(VirtualRoomTickData data);
 
         Task CmdToKeepAliveConnection();
@@ -20,9 +24,13 @@ namespace Shared.Network
     public interface IClassRoomHubReceiver
     {
         // The method must have a return type of `void` and can have up to 15 parameters of any type.
-        void OnJoin(PublicUserData user);
+        void OnJoin(RoomStatusResponse status, PublicUserData user);
 
-        void OnLeave(PublicUserData user);
+        void OnLeave(RoomStatusResponse status, PublicUserData user);
+
+        void OnInviteToGame(InviteToGameData data, PublicUserData inviter);
+
+        void OnUpdateAvatar(PublicUserData user);
 
         void OnRoomTick(VirtualRoomTickResponse response);
 

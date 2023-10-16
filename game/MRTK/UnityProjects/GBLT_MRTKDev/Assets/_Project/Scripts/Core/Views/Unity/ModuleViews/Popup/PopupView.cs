@@ -76,18 +76,20 @@ namespace Core.View
         {
             _yesBtn.OnClicked.AddListener(() =>
             {
-                _signal?.YesAction?.Invoke(_inputFields[0].text, _inputFields[1].text);
+                ShowPopupSignal temp = _signal;
+                OnShowPopup(new ShowPopupSignal(isShow: false));
+                temp?.YesAction?.Invoke(_inputFields[0].text, _inputFields[1].text);
 
-                transform.SetActive(false);
-                _signal?.OnClose?.Invoke();
+                temp?.OnClose?.Invoke();
             });
 
             _noBtn.OnClicked.AddListener(() =>
             {
-                _signal?.NoAction?.Invoke(_inputFields[0].text, _inputFields[1].text);
+                ShowPopupSignal temp = _signal;
+                OnShowPopup(new ShowPopupSignal(isShow: false));
+                temp?.NoAction?.Invoke(_inputFields[0].text, _inputFields[1].text);
 
-                transform.SetActive(false);
-                _signal?.OnClose?.Invoke();
+                temp?.OnClose?.Invoke();
             });
         }
 
@@ -120,7 +122,7 @@ namespace Core.View
 
         private void SetInitialInput(int index, ShowPopupSignal signal)
         {
-            _inputFieldContainers[index].SetActive(signal.IsShowInputs.IsNotNullAndGreaterThan(index) ? signal.IsShowInputs[index] : false);
+            _inputFieldContainers[index].SetActive(signal.IsShowInputs.IsNotNullAndGreaterThan(index) && signal.IsShowInputs[index]);
             _inputFields[index].text = signal.InitialInputValues.IsNotNullAndGreaterThan(index) ? signal.InitialInputValues[index] : "";
             _inputFields[index].placeholder.GetComponent<TextMeshProUGUI>().text = signal.InputPlaceholders.IsNotNullAndGreaterThan(index) ? signal.InputPlaceholders[index] : "";
         }

@@ -4,20 +4,20 @@ using System.Linq;
 
 namespace Shared.Network
 {
+    [System.Serializable]
     [MessagePackObject(true)]
     public class PublicUserData
     {
+        public System.Guid? ConnectionId { get; set; }
         public int Index { get; set; }
         public string Name { get; set; }
         public string AvatarPath { get; set; } = Defines.PrefabKey.DefaultRoomAvatar;
+        public string ModelPath { get; set; } = Defines.PrefabKey.DefaultRoomModel;
         public Vec3D HeadRotation { get; set; }
         public bool IsHost => Index == -1;
-
-        // In Game Attributes
-        public int Score { get; set; }
-        public int Rank { get; set; }
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class PrivateUserData : PublicUserData
     {
@@ -41,14 +41,10 @@ namespace Shared.Network
     }
 
     [MessagePackObject(true)]
-    public class InGameStatusResponse : GeneralRoomStatusResponse
-    {
-    }
-
-    [MessagePackObject(true)]
     public class VirtualRoomTickResponse : GeneralResponse
     {
         public PublicUserData User { get; set; }
         public byte[] Texture { get; set; }
+        public bool IsSharing { get; set; }
     }
 }

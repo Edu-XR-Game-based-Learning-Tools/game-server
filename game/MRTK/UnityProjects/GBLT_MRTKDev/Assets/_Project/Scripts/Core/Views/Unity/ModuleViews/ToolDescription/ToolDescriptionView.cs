@@ -1,8 +1,10 @@
 using Core.Business;
+using Core.Extension;
 using Core.Framework;
 using Core.Module;
 using Core.Utility;
 using Microsoft.MixedReality.Toolkit.UX;
+using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -16,6 +18,9 @@ namespace Core.View
     {
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
+        private ClassRoomHub _classRoomHub;
+        private QuizzesHub _quizzesHub;
+        private IUserDataController _userDataController;
 
         [SerializeField][DebugOnly] private PressableButton _closeBtn;
         [SerializeField][DebugOnly] private PressableButton _backBtn;
@@ -33,6 +38,9 @@ namespace Core.View
         {
             _gameStore = gameStore;
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
+            _classRoomHub = container.Resolve<ClassRoomHub>();
+            _quizzesHub = container.Resolve<QuizzesHub>();
+            _userDataController = container.Resolve<IUserDataController>();
         }
 
         private void GetReferences()
@@ -60,9 +68,19 @@ namespace Core.View
                     "", ViewName.Unity, ModuleName.LandingScreen);
             });
 
-            _openBtn.OnClicked.AddListener(() =>
+            _openBtn.OnClicked.AddListener(async () =>
             {
-                Debug.Log(CoreDefines.NotAvailable);
+                QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData());
+                await _classRoomHub.InviteToGame(response);
+
+                if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                    return;
+
+                _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
+                _gameStore.GState.RemoveModel<LandingScreenModel>();
+                await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                    "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
             });
         }
 
@@ -70,10 +88,15 @@ namespace Core.View
         {
             GetReferences();
             RegisterEvents();
+
+            Refresh();
         }
 
         public void Refresh()
         {
+            bool isInRoomView = _userDataController.ServerData.IsInRoom;
+            bool isInGameView = _userDataController.ServerData.IsInGame;
+            _openBtn.SetActive(isInRoomView && !isInGameView);
         }
     }
 }
