@@ -24,6 +24,13 @@ MonoBehaviour:
     HostType: 1
     DefaultApiEndPoints:
     - Array:
+      - http://localhost:5002
+    - Array:
+      - http://192.168.1.191:5002
+    - Array:
+      - http://20.25.54.224:5002
+    DefaultHubEndPoints:
+    - Array:
       - http://localhost:5000
     - Array:
       - http://192.168.1.191:5000

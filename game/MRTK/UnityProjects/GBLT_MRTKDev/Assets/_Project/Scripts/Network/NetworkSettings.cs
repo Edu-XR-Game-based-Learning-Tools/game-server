@@ -21,5 +21,6 @@
         }
 
         public ThingWithArrays[] DefaultApiEndPoints;
+        public ThingWithArrays[] DefaultHubEndPoints;
     }
 }

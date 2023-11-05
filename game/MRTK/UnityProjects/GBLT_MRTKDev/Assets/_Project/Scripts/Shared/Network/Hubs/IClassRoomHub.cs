@@ -18,6 +18,8 @@ namespace Shared.Network
 
         Task VirtualRoomTickSync(VirtualRoomTickData data);
 
+        Task Tick(string message = "");
+
         Task CmdToKeepAliveConnection();
     }
 

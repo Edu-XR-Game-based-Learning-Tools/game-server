@@ -112,7 +112,6 @@ namespace Shared.Network
         public Task DisposeAsync()
         {
             _stayAliveHelper.Dispose();
-            _virtualRoomPresenter.Clean();
             return _client.DisposeAsync();
         }
 

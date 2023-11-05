@@ -13,6 +13,7 @@ namespace Shared.Network
         FIREBASE = 5
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class AuthenticationData : LoginResponse
     {

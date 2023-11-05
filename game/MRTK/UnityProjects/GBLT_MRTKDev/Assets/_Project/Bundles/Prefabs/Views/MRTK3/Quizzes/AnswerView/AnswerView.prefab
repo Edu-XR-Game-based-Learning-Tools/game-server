@@ -1456,9 +1456,11 @@ MonoBehaviour:
   _loadingContainer:
     Transform: {fileID: 0}
     _backBtn: {fileID: 0}
+    _viewRoot: {fileID: 0}
   _answerView:
     Transform: {fileID: 0}
     _backBtn: {fileID: 0}
+    _viewRoot: {fileID: 0}
     _imageObject2D: {fileID: 0}
     _rtObject3D: {fileID: 0}
     _imageToggleBtn: {fileID: 0}
@@ -1469,6 +1471,7 @@ MonoBehaviour:
   _scoreView:
     Transform: {fileID: 0}
     _backBtn: {fileID: 0}
+    _viewRoot: {fileID: 0}
     _resultTxt: {fileID: 0}
     _correctImg: {fileID: 0}
     _incorrectImg: {fileID: 0}
@@ -1476,6 +1479,7 @@ MonoBehaviour:
   _rankView:
     Transform: {fileID: 0}
     _backBtn: {fileID: 0}
+    _viewRoot: {fileID: 0}
     _nameTxt: {fileID: 0}
     _avatarImg: {fileID: 0}
     _scoreTxt: {fileID: 0}
@@ -2099,7 +2103,6 @@ GameObject:
   m_Component:
   - component: {fileID: 369566949790564732}
   - component: {fileID: 1695587325638314821}
-  - component: {fileID: 7262222788698194658}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -2165,14 +2168,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &7262222788698194658
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7054756890688615366}
-  m_Enabled: 1
 --- !u!1 &7796847483579846754
 GameObject:
   m_ObjectHideFlags: 0

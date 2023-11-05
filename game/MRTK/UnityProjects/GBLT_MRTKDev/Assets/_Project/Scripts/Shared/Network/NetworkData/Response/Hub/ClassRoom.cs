@@ -23,16 +23,19 @@ namespace Shared.Network
     {
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class GeneralRoomStatusResponse : GeneralResponse
     {
         public string Id { get; set; }
         public PrivateUserData Self { get; set; }
         public PublicUserData[] AllInRoom { get; set; }
+        public PublicUserData[] Students => AllInRoom.WhereNot((ele) => ele.IsHost).ToArray();
         public PublicUserData[] Others => AllInRoom.WhereNot((ele) => ele.Index == Self.Index).ToArray();
-        public int Amount => AllInRoom.Length + 1;
+        public int Amount => AllInRoom.Length - 1;
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class RoomStatusResponse : GeneralRoomStatusResponse
     {
@@ -40,11 +43,13 @@ namespace Shared.Network
         public string Password { get; set; }
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class VirtualRoomTickResponse : GeneralResponse
     {
         public PublicUserData User { get; set; }
         public byte[] Texture { get; set; }
         public bool IsSharing { get; set; }
+        public bool IsSharingQuizzesGame { get; set; }
     }
 }

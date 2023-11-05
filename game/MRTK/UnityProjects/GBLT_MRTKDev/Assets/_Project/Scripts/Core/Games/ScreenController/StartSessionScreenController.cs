@@ -1,6 +1,9 @@
 ﻿using Core.Business;
 using Core.Module;
 using Core.Network;
+using Cysharp.Threading.Tasks;
+using MagicOnion;
+using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
 using VContainer;
@@ -16,6 +19,7 @@ namespace Core.Framework
         private readonly IDataServiceController _dataServiceController;
         private readonly IDefinitionDataController _definitionDataController;
         private readonly VirtualRoomPresenter _virtualRoomPresenter;
+        private readonly ClassRoomHub _classRoomHub;
 
         public ScreenName Name => ScreenName.SessionStart;
 
@@ -36,6 +40,7 @@ namespace Core.Framework
             _dataServiceController = container.Resolve<IDataServiceController>();
             _definitionDataController = container.Resolve<IDefinitionDataController>();
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
+            _classRoomHub = container.Resolve<ClassRoomHub>();
         }
 
         public async void Enter()
@@ -46,6 +51,7 @@ namespace Core.Framework
 
             await _definitionDataController.VerifyClient();
             _virtualRoomPresenter.Init();
+            _classRoomHub.Init();
 
             //await _gameStore.GetOrCreateModule<IDummy, DummyModel>(
             //    "", ViewName.Unity, ModuleName.Dummy);

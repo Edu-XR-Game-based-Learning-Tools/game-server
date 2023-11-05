@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9167525486573476384}
   - component: {fileID: 6962451928209302186}
   - component: {fileID: 7607408161429191202}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99,7 +99,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7390551460266903445}
   - component: {fileID: 4285023603319843837}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Side
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -167,7 +167,7 @@ GameObject:
   - component: {fileID: 3946635837447952376}
   - component: {fileID: 1584314935604543958}
   - component: {fileID: 2987211746569380096}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -976,7 +976,7 @@ GameObject:
   - component: {fileID: 1923612791785819405}
   - component: {fileID: 3300588046009939971}
   - component: {fileID: 4230985091371907640}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1065,7 +1065,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -1132,7 +1132,7 @@ GameObject:
   - component: {fileID: 1531177663976929253}
   - component: {fileID: 540601570050612641}
   - component: {fileID: 1879991809177815704}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1235,7 +1235,7 @@ GameObject:
   - component: {fileID: 4551815335305538803}
   - component: {fileID: 8363910178414118022}
   - component: {fileID: 2933113186107497334}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: BG
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1356,7 +1356,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5186242023358716844}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.557, z: -0.499}
+  m_LocalPosition: {x: 0, y: 1.55, z: -0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1376,7 +1376,7 @@ GameObject:
   - component: {fileID: 4444563239359623591}
   - component: {fileID: 2352488045540283645}
   - component: {fileID: 1998559374530642672}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: BG
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1484,7 +1484,7 @@ GameObject:
   - component: {fileID: 7600191140205356658}
   - component: {fileID: 8893443656196363126}
   - component: {fileID: 7403860071098650706}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Flip
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1572,7 +1572,7 @@ GameObject:
   - component: {fileID: 559271699996924533}
   - component: {fileID: 8311140713737540501}
   - component: {fileID: 8123296245348511733}
-  m_Layer: 5
+  m_Layer: 8
   m_Name: Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1661,7 +1661,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0

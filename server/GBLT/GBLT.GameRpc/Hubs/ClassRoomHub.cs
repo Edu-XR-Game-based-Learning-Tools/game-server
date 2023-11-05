@@ -71,7 +71,7 @@ namespace RpcService.Hub
         private IGroup _room;
 
         private PrivateUserData _self;
-        private IInMemoryStorage<PublicUserData> _storage;
+        private IInMemoryStorage<PublicUserData> _storage; // -1 index is host
 
         public ClassRoomHub(IUserDataService userDataService, IJwtTokenValidator jwtTokenValidator, IRedisDataService redisDataService) : base(userDataService, jwtTokenValidator, redisDataService)
         {
@@ -122,7 +122,7 @@ namespace RpcService.Hub
 
         private GeneralResponse ValidateJoinRoom(JoinClassRoomData data)
         {
-            if (_storage != null && _storage.AllValues.Count > data.Amount)
+            if (_storage != null && _storage.AllValues.Count - 1 > data.Amount)
                 return new RoomStatusResponse { Success = false, Password = Defines.FULL_AMOUNT };
 
             if (data.Password != data.Password)
@@ -133,7 +133,7 @@ namespace RpcService.Hub
 
         public async Task<RoomStatusResponse> JoinAsync(JoinClassRoomData data)
         {
-            _self = new() { ConnectionId = ConnectionId, Name = data.UserName };
+            _self = new() { ConnectionId = ConnectionId, Name = data.UserName.IsNullOrEmpty() ? "Name" : data.UserName };
             RoomStatusResponse validateMsg;
 
             try
@@ -155,7 +155,14 @@ namespace RpcService.Hub
                 if (validateMsg != null) return validateMsg;
 
                 (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
-                _self.Index = isHost ? -1 : _storage.AllValues.Count - 1; // -1 for not count teacher, teacher seat: index = -1
+                var allIndexesInRoom = _storage.AllValues.Select(user => user.Index).OrderBy(index => index);
+                int index = -1;
+                for (int idx = 0; idx < allIndexesInRoom.Count(); idx++)
+                {
+                    if (index != allIndexesInRoom.ElementAt(idx)) break;
+                    index++;
+                }
+                _self.Index = isHost ? -1 : index; // -1 for not count teacher, teacher seat: index = -1
 
                 RoomStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
                 BroadcastExceptSelf(_room).OnJoin(status, _self);
@@ -178,11 +185,12 @@ namespace RpcService.Hub
                 _roomSet.Remove(_room.GroupName);
                 await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
             }
-            await _room.RemoveAsync(Context);
 
             RoomStatusResponse status = null;
             if (!_self.IsHost) status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
             Broadcast(_room).OnLeave(status, _self);
+
+            await _room.RemoveAsync(Context);
         }
 
         public async Task InviteToGame(InviteToGameData data)
@@ -197,7 +205,7 @@ namespace RpcService.Hub
             _self.Name = name;
             _self.AvatarPath = avatarPath;
             _self.ModelPath = modelPath;
-            BroadcastExceptSelf(_room).OnUpdateAvatar(_self);
+            Broadcast(_room).OnUpdateAvatar(_self);
             return Task.CompletedTask;
         }
 
@@ -209,8 +217,15 @@ namespace RpcService.Hub
                 User = _self,
                 Texture = data.Texture,
                 IsSharing = data.IsSharing,
+                IsSharingQuizzesGame = data.IsSharingQuizzesGame,
             });
             return Task.CompletedTask;
+        }
+
+        public async Task Tick(string message = "")
+        {
+            (_room, _) = await Group.AddAsync("data.RoomId", new PublicUserData());
+            Broadcast(_room).OnTick(message);
         }
     }
 }

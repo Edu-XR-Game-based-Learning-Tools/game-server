@@ -27,7 +27,7 @@ namespace Core.View
         [SerializeField][DebugOnly] protected PressableButton _3dToggleBtn;
         [SerializeField][DebugOnly] protected bool _isImageToggle = true;
 
-        public ObjectQuizVisual(Transform transform, IObjectResolver container, string prefix = "Content/Layout/") : base(transform, container)
+        public ObjectQuizVisual(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null, string prefix = "Content/Layout/") : base(transform, container, viewRoot, onBack)
         {
             _imageObject2D = transform.Find($"{prefix}/Visual/Image").GetComponent<Image>();
             _rtObject3D = transform.Find($"{prefix}/Visual/RT_3D");
@@ -75,7 +75,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private PressableButton _nextBtn;
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public HeaderView(Transform transform, IObjectResolver container) : base(transform, container)
+            public HeaderView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _noQuestionTxt = transform.Find("Header/NoQuestion_Txt").GetComponent<TextMeshProUGUI>();
                 _nextBtn = transform.Find("Header/Next_Btn").GetComponent<PressableButton>();
@@ -113,7 +113,7 @@ namespace Core.View
             [SerializeField] private float _previewDuration = 10f;
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public PreviewView(Transform transform, IObjectResolver container) : base(transform, container)
+            public PreviewView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _questionTxt = transform.Find("Content/Question_Txt").GetComponent<TextMeshProUGUI>();
                 _progressSlider = transform.Find("Footer/Slider").GetComponent<Microsoft.MixedReality.Toolkit.UX.Slider>();
@@ -156,7 +156,7 @@ namespace Core.View
 
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
-            public QuestionView(Transform transform, IObjectResolver container) : base(transform, container, "Countdown/Content/Layout/")
+            public QuestionView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack, "Countdown/Content/Layout/")
             {
                 countdownTransform = transform.Find("Countdown");
                 resultTransform = transform.Find("Result");
@@ -252,7 +252,7 @@ namespace Core.View
             [SerializeField][DebugOnly] protected Transform _scrollContent;
             protected UserDataController _userDataController;
 
-            public ScoreboardView(Transform transform, IObjectResolver container, string scrollPrefix = "Content/") : base(transform, container)
+            public ScoreboardView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null, string scrollPrefix = "Content/") : base(transform, container, viewRoot, onBack)
             {
                 _userDataController = container.Resolve<IUserDataController>() as UserDataController;
                 _scrollContent = transform.Find($"{scrollPrefix}/Scroll View/Viewport/Content");
@@ -275,7 +275,7 @@ namespace Core.View
                         Instantiate(_scrollContent.GetChild(0), _scrollContent);
 
                     var record = _scrollContent.GetChild(idx);
-                    record.Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetUserAvatar(quizPlayers[idx].UserData.AvatarPath);
+                    record.Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetSprite(quizPlayers[idx].UserData.AvatarPath);
                     record.Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].UserData.Name;
                     record.Find("Score_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Score}";
                 }
@@ -287,7 +287,7 @@ namespace Core.View
         {
             [SerializeField][DebugOnly] protected Transform[] _top3 = new Transform[3];
 
-            public LeaderBoardView(Transform transform, IObjectResolver container) : base(transform, container, "Footer/")
+            public LeaderBoardView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack, "Footer/")
             {
                 _top3[0] = transform.Find("Content/Layout").GetChild(1);
                 _top3[1] = transform.Find("Content/Layout").GetChild(2);
@@ -300,7 +300,7 @@ namespace Core.View
                      ele.Score).ToArray();
                 for (int idx = 0; idx < _top3.Length; idx++)
                 {
-                    _top3[idx].Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetUserAvatar(quizPlayers[idx].UserData.AvatarPath);
+                    _top3[idx].Find("Avatar").GetComponent<Image>().sprite = await _userDataController.LocalUserCache.GetSprite(quizPlayers[idx].UserData.AvatarPath);
                     _top3[idx].Find("Name_Txt").GetComponent<TextMeshProUGUI>().text = quizPlayers[idx].UserData.Name;
                     _top3[idx].Find("Score_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Score}";
                     _top3[idx].Find("Rank_Txt").GetComponent<TextMeshProUGUI>().text = $"{quizPlayers[idx].Rank}";
@@ -344,11 +344,11 @@ namespace Core.View
         {
             _object3DContainer = transform.Find("3D_Renderer/Object");
 
-            _headerView = new(transform.Find("Canvas/Header"), _container);
-            _previewView = new(transform.Find("Canvas/Preview"), _container);
-            _questionView = new(transform.Find("Canvas/Question"), _container);
-            _scoreboardView = new(transform.Find("Canvas/Scoreboard"), _container);
-            _leaderBoardView = new(transform.Find("Canvas/LeaderBoard"), _container);
+            _headerView = new(transform.Find("Canvas/Header"), _container, transform);
+            _previewView = new(transform.Find("Canvas/Preview"), _container, transform);
+            _questionView = new(transform.Find("Canvas/Question"), _container, transform);
+            _scoreboardView = new(transform.Find("Canvas/Scoreboard"), _container, transform);
+            _leaderBoardView = new(transform.Find("Canvas/LeaderBoard"), _container, transform);
         }
 
         public override void OnReady()

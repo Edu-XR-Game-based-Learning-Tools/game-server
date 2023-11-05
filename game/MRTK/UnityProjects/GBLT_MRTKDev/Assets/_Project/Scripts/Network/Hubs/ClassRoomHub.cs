@@ -9,11 +9,10 @@ using System;
 using System.Threading.Tasks;
 using UnityEngine;
 using VContainer;
-using VContainer.Unity;
 
 namespace Shared.Network
 {
-    public class ClassRoomHub : IClassRoomHubReceiver, IInitializable, IDisposable
+    public class ClassRoomHub : IClassRoomHubReceiver, IDisposable
     {
         private readonly IGRpcHubClient _gRpcHubClient;
         private readonly VirtualRoomPresenter _virtualRoomPresenter;
@@ -43,10 +42,10 @@ namespace Shared.Network
             _gameStore = container.Resolve<GameStore>();
         }
 
-        public void Initialize()
+        public void Init()
         {
             _disposableBagBuilder = DisposableBag.CreateBuilder();
-            _onVirtualRoomTickSubscriber.Subscribe(OnVirtualRoomTick).AddTo(_disposableBagBuilder);
+            _onVirtualRoomTickSubscriber.Subscribe(OnVirtualRoomTickHandler).AddTo(_disposableBagBuilder);
         }
 
         public void Dispose()
@@ -77,15 +76,15 @@ namespace Shared.Network
             return response;
         }
 
-        private void OnVirtualRoomTick(OnVirtualRoomTickSignal signal)
+        private void OnVirtualRoomTickHandler(OnVirtualRoomTickSignal signal)
         {
             _client.VirtualRoomTickSync(signal.TickData);
         }
 
-        public Task LeaveAsync()
+        public async Task LeaveAsync()
         {
             _stayAliveHelper.Dispose();
-            return _client.LeaveAsync();
+            await _client.LeaveAsync();
         }
 
         public async Task InviteToGame(QuizzesStatusResponse quizzesResponse)
@@ -101,20 +100,25 @@ namespace Shared.Network
             await _client.UpdateAvatar(name, modelPath, avatarPath);
         }
 
+        public async Task Tick(string message)
+        {
+            _client = await _gRpcHubClient.Subscribe<IClassRoomHub, IClassRoomHubReceiver>(this);
+            await _client.Tick(message);
+        }
+
         #endregion Methods send to server.
 
         // dispose client-connection before channel.ShutDownAsync is important!
-        public Task DisposeAsync()
+        public async Task DisposeAsync()
         {
             _stayAliveHelper.Dispose();
-            _virtualRoomPresenter.Clean();
-            return _client.DisposeAsync();
+            await _client.DisposeAsync();
         }
 
         // You can watch connection state, use this for retry etc.
-        public Task WaitForDisconnect()
+        public async Task WaitForDisconnect()
         {
-            return _client.WaitForDisconnect();
+            await _client.WaitForDisconnect();
         }
 
         #region Receivers of message from server.
@@ -131,8 +135,8 @@ namespace Shared.Network
         {
             Debug.Log("Leave User:" + user.Name);
 
-            _userDataController.ServerData.RoomStatus.RoomStatus = status;
             _virtualRoomPresenter.OnLeave(user);
+            _userDataController.ServerData.RoomStatus.RoomStatus = _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index ? null : status;
         }
 
         public void OnRoomTick(VirtualRoomTickResponse response)

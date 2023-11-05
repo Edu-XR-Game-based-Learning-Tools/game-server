@@ -37,5 +37,18 @@ namespace Core.Extension
             ColorUtility.TryParseHtmlString(hex, out var color);
             return color;
         }
+
+        public static Texture2D ToTexture2D(this RenderTexture rTex)
+        {
+            Texture2D tex = new(rTex.width, rTex.height, TextureFormat.RGB24, false);
+            var old_rt = RenderTexture.active;
+            RenderTexture.active = rTex;
+
+            tex.ReadPixels(new Rect(0, 0, rTex.width, rTex.height), 0, 0);
+            tex.Apply();
+
+            RenderTexture.active = old_rt;
+            return tex;
+        }
     }
 }

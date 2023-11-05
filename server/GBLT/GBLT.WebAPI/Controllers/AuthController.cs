@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Network;
 using System.Net;
-using WebAPI.Dto;
 
 namespace WebAPI.Controllers
 {

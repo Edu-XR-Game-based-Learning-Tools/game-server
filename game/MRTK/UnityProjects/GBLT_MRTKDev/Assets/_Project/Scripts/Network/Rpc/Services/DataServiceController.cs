@@ -54,7 +54,10 @@ namespace Core.Network
 
         public async UniTask<byte[]> LoadDefinitions()
         {
-            byte[] definitions = await _gRpcServiceClient.CreateServiceWithFilter<IGenericService>(_unAuthenClientFilter).GetDefinitions();
+            var client = _gRpcServiceClient.CreateServiceWithFilter<IGenericService>(_unAuthenClientFilter);
+            UnityEngine.Debug.Log($"_gRpcServiceClient.CreateServiceWithFilter: {client}");
+            byte[] definitions = await client.GetDefinitions();
+            UnityEngine.Debug.Log($"LoadDefinitions: {definitions}");
             return definitions;
         }
 

@@ -4,7 +4,7 @@ using Core.Extension;
 using Core.Framework;
 using Core.Module;
 using Core.Utility;
-using MessagePipe;
+using Cysharp.Threading.Tasks;
 using Microsoft.MixedReality.Toolkit.UX;
 using Shared;
 using Shared.Extension;
@@ -33,17 +33,22 @@ namespace Core.View
         [DebugOnly] public Transform Transform;
         [SerializeField][DebugOnly] protected PressableButton _backBtn;
         [SerializeField][DebugOnly] protected IObjectResolver _container;
+        [SerializeField][DebugOnly] protected Transform _viewRoot;
+        [SerializeField][DebugOnly] protected Action _onBack;
 
-        public SubView(Transform transform, IObjectResolver container)
+        public SubView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack = null)
         {
             Transform = transform;
             _container = container;
+            _viewRoot = viewRoot;
+            _onBack = onBack;
         }
 
         public virtual void RegisterEvents()
         {
             _backBtn.OnClicked.AddListener(() =>
             {
+                _onBack?.Invoke();
                 Transform.SetActive(false);
             });
         }
@@ -61,7 +66,7 @@ namespace Core.View
 
             [SerializeField][DebugOnly] protected PressableButton[] _toolBtns;
 
-            public SelectToolView(Transform transform, IObjectResolver container) : base(transform, container)
+            public SelectToolView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
             {
                 _gameStore = container.Resolve<GameStore>();
                 _classRoomHub = container.Resolve<ClassRoomHub>();
@@ -116,9 +121,9 @@ namespace Core.View
             [SerializeField][DebugOnly] protected int _selectedModelIdx = 0;
 
             [SerializeField] protected Color _selectedColor = new(1f, 1f, 1f, 1f);
-            [SerializeField] protected Color _defaultColor = "27984C".HexToColor();
+            [SerializeField] protected Color _defaultColor = "#27984CFF".HexToColor();
 
-            public EditAvatarView(Transform transform, IObjectResolver container) : base(transform, container)
+            public EditAvatarView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
             {
                 _classRoomHub = container.Resolve<ClassRoomHub>();
                 _bundleLoader = container.Resolve<IReadOnlyList<IBundleLoader>>().ElementAt((int)BundleLoaderName.Addressable);
@@ -133,6 +138,7 @@ namespace Core.View
                 {
                     if (idx > 0)
                         Instantiate(parent.GetChild(0), parent);
+                    parent.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.AvatarPaths[idx]}";
                     return parent.GetChild(idx).GetComponent<PressableButton>();
                 }).ToArray();
 
@@ -141,8 +147,11 @@ namespace Core.View
                 {
                     if (idx > 0)
                         Instantiate(parent.GetChild(0), parent);
+                    parent.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.ModelThumbnailPaths[idx]}";
                     return parent.GetChild(idx).GetComponent<PressableButton>();
                 }).ToArray();
+
+                _submitBtn = Transform.Find("Content/Form/Submit_Btn").GetComponent<PressableButton>();
 
                 SetAvatarIcon();
 
@@ -165,23 +174,25 @@ namespace Core.View
 
             private async void SetAvatarIcon()
             {
-                _selectedAvatarIdx = Defines.PrefabKey.AvatarPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.AvatarPath).First().idx;
-
                 for (int idx = 0; idx < _avatarBtns.Length; idx++)
                 {
-                    _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = (await _bundleLoader.LoadAssetAsync<Texture2D>(Defines.PrefabKey.AvatarPaths[idx])).TexToSprite();
+                    _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.AvatarPaths[idx]);
 
-                    EnableAvatar(idx);
+                    _avatarBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
-                EnableAvatar(_selectedAvatarIdx);
 
                 for (int idx = 0; idx < _modelBtns.Length; idx++)
                 {
-                    _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = (await _bundleLoader.LoadAssetAsync<Texture2D>(Defines.PrefabKey.ModelThumbnailPaths[idx])).TexToSprite();
+                    _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.ModelThumbnailPaths[idx]);
 
-                    EnableModel(idx);
+                    _modelBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
-                EnableModel(_selectedAvatarIdx);
+
+                _selectedAvatarIdx = Defines.PrefabKey.AvatarPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.AvatarPath).First().idx;
+                EnableAvatar(_selectedAvatarIdx);
+
+                _selectedModelIdx = Defines.PrefabKey.ModelPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.ModelPath).First().idx;
+                EnableModel(_selectedModelIdx);
             }
 
             public override void RegisterEvents()
@@ -191,25 +202,21 @@ namespace Core.View
                 for (int idx = 0; idx < _avatarBtns.Length; idx++)
                 {
                     int index = idx;
-                    _avatarBtns[idx].OnClicked.AddListener(() =>
-                    {
-                        EnableAvatar(index);
-                    });
+                    _avatarBtns[idx].OnClicked.AddListener(() => EnableAvatar(index));
                 }
 
+                bool test = false;
                 for (int idx = 0; idx < _modelBtns.Length; idx++)
                 {
                     int index = idx;
-                    _modelBtns[idx].OnClicked.AddListener(() =>
-                    {
-                        EnableModel(index);
-                    });
+                    _modelBtns[idx].OnClicked.AddListener(() => EnableModel(index));
                 }
 
                 _submitBtn.OnClicked.AddListener(async () =>
                 {
                     await _classRoomHub.UpdateAvatar(_nameInput.text.IsNullOrEmpty() ? "Name" : _nameInput.text, SelectedModelPath, SelectedAvatarPath);
                     Transform.SetActive(false);
+                    _onBack?.Invoke();
                 });
             }
         }
@@ -219,7 +226,7 @@ namespace Core.View
         {
             [SerializeField][DebugOnly] protected MRTKTMPInputField _roomCapInput;
 
-            public SettingView(Transform transform, IObjectResolver container) : base(transform, container)
+            public SettingView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
             {
                 _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
 
@@ -230,7 +237,7 @@ namespace Core.View
 
             public override void RegisterEvents()
             {
-                _backBtn.OnClicked.AddListener(() => Transform.SetActive(false));
+                base.RegisterEvents();
             }
         }
 
@@ -246,12 +253,14 @@ namespace Core.View
 
         [SerializeField][DebugOnly] private TextMeshProUGUI _titleTxt;
         [SerializeField][DebugOnly] private TextMeshProUGUI _amountTxt;
+        [SerializeField][DebugOnly] private RoomStatusPerson _hostItem;
         [SerializeField][DebugOnly] private RoomStatusPerson[] _personItems;
 
         [SerializeField][DebugOnly] private PressableButton _selectToolBtn;
         [SerializeField][DebugOnly] private PressableButton _editAvatarBtn;
         [SerializeField][DebugOnly] private PressableButton _settingBtn;
 
+        [DebugOnly] public Transform RootContent;
         [SerializeField][DebugOnly] private EditAvatarView _editAvatarView;
         [SerializeField][DebugOnly] private SelectToolView _selectToolView;
         [SerializeField][DebugOnly] private SettingView _settingView;
@@ -271,12 +280,20 @@ namespace Core.View
 
         private void GetReferences()
         {
-            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/Close_Btn").GetComponent<PressableButton>();
-            _quitBtn = transform.Find("CanvasDialog/Canvas/Header/Quit_Btn").GetComponent<PressableButton>();
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Close_Btn").GetComponent<PressableButton>();
+            _quitBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Quit_Btn").GetComponent<PressableButton>();
 
-            _titleTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Title").GetComponent<TextMeshProUGUI>();
-            _amountTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
-            var list = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
+            _titleTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Title").GetComponent<TextMeshProUGUI>();
+            _amountTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
+
+            var hostTransform = transform.Find("CanvasDialog/Canvas/Content/Content/Person");
+            _hostItem = new RoomStatusPerson
+            {
+                Button = hostTransform.GetComponent<PressableButton>(),
+                NameTxt = hostTransform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>(),
+                IconImg = hostTransform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>(),
+            };
+            var list = transform.Find("CanvasDialog/Canvas/Content/Content/Scroll View/Viewport/Content");
             _personItems = new bool[list.childCount].Select((_, idx) =>
             {
                 Transform person = list.GetChild(idx);
@@ -288,17 +305,23 @@ namespace Core.View
                 };
             }).ToArray();
 
-            _selectToolBtn = transform.Find("CanvasDialog/Canvas/Footer/SelectTool_Btn").GetComponent<PressableButton>();
-            _editAvatarBtn = transform.Find("CanvasDialog/Canvas/Footer/EditAvatar_Btn").GetComponent<PressableButton>();
-            _settingBtn = transform.Find("CanvasDialog/Canvas/Footer/Setting_Btn").GetComponent<PressableButton>();
+            _selectToolBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/SelectTool_Btn").GetComponent<PressableButton>();
+            _editAvatarBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/EditAvatar_Btn").GetComponent<PressableButton>();
+            _settingBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/Setting_Btn").GetComponent<PressableButton>();
 
-            _selectToolView = new SelectToolView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container);
-            _editAvatarView = new EditAvatarView(transform.Find("CanvasDialog/Canvas/EditAvatar"), _container);
-            _settingView = new SettingView(transform.Find("CanvasDialog/Canvas/Setting"), _container);
+            RootContent = transform.Find("CanvasDialog/Canvas/Content");
+            _selectToolView = new SelectToolView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform, OnBack);
+            _editAvatarView = new EditAvatarView(transform.Find("CanvasDialog/Canvas/EditAvatar"), _container, transform, OnBack);
+            _settingView = new SettingView(transform.Find("CanvasDialog/Canvas/Setting"), _container, transform, OnBack);
 
             _selectToolView.Transform.SetActive(false);
             _editAvatarView.Transform.SetActive(false);
             _settingView.Transform.SetActive(false);
+        }
+
+        private void OnBack()
+        {
+            RootContent.SetActive(true);
         }
 
         private void RegisterEvents()
@@ -332,11 +355,20 @@ namespace Core.View
             }
 
             _selectToolBtn.OnClicked.AddListener(() =>
-                _selectToolView.Transform.SetActive(true));
+            {
+                RootContent.SetActive(false);
+                _selectToolView.Transform.SetActive(true);
+            });
             _editAvatarBtn.OnClicked.AddListener(() =>
-                _editAvatarView.Transform.SetActive(true));
+            {
+                RootContent.SetActive(false);
+                _editAvatarView.Transform.SetActive(true);
+            });
             _settingBtn.OnClicked.AddListener(() =>
-                _settingView.Transform.SetActive(true));
+            {
+                RootContent.SetActive(false);
+                _settingView.Transform.SetActive(true);
+            });
         }
 
         public override void OnReady()
@@ -347,7 +379,27 @@ namespace Core.View
             Refresh();
         }
 
-        public void Refresh()
+        public async UniTask UpdateCharacter(PublicUserData userData, bool isShow = true)
+        {
+            if (userData.IsHost)
+                _hostItem.Button.SetActive(isShow);
+            else
+                _personItems[userData.Index].Button.SetActive(isShow);
+            if (!isShow) return;
+
+            var avt = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(userData.AvatarPath);
+            if (userData.IsHost)
+            {
+                _hostItem.NameTxt.text = userData.Name;
+                _hostItem.IconImg.sprite = avt;
+                return;
+            }
+
+            _personItems[userData.Index].NameTxt.text = userData.Name;
+            _personItems[userData.Index].IconImg.sprite = avt;
+        }
+
+        public async void Refresh()
         {
             if (!_userDataController.ServerData.IsInRoom)
             {
@@ -362,18 +414,9 @@ namespace Core.View
             _titleTxt.SetText($"{idPrefix}: {status.Id}");
             _amountTxt.SetText($"Amount: {status.Amount}");
             for (int idx = 0; idx < _personItems.Length; idx++)
-            {
-                _personItems[idx].Button.SetActive(idx >= status.Others.Length);
-                if (idx >= status.Others.Length) continue;
-
-                if (status.Others[idx].IsHost)
-                {
-                    idx--;
-                    continue;
-                }
-
-                _personItems[idx].NameTxt.text = status.Others[idx].Name;
-            }
+                _personItems[idx].Button.SetActive(false);
+            for (int idx = 0; idx < status.AllInRoom.Length; idx++)
+                await UpdateCharacter(status.AllInRoom[idx]);
 
             bool isHost = _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost;
             _selectToolBtn.SetActive(isHost && !isInGame);

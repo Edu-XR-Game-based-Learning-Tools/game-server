@@ -276,9 +276,7 @@ namespace MessagePack.Formatters.Shared.Network
             options.Security.DepthStep(ref reader);
             var formatterResolver = options.Resolver;
             var length = reader.ReadMapHeader();
-            var __Token__ = default(string);
-            var __ExpiresIn__ = default(int);
-            var __IssuedAt__ = default(global::System.DateTime);
+            var ____result = new global::Shared.Network.AccessToken();
 
             for (int i = 0; i < length; i++)
             {
@@ -292,23 +290,22 @@ namespace MessagePack.Formatters.Shared.Network
                     case 5:
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 474147942228UL) { goto FAIL; }
 
-                        __Token__ = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.Token = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
                         continue;
                     case 9:
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_ExpiresIn().Slice(1))) { goto FAIL; }
 
-                        __ExpiresIn__ = reader.ReadInt32();
+                        ____result.ExpiresIn = reader.ReadInt32();
                         continue;
                     case 8:
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 8377087168810808137UL) { goto FAIL; }
 
-                        __IssuedAt__ = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.DateTime>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.IssuedAt = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.DateTime>(formatterResolver).Deserialize(ref reader, options);
                         continue;
 
                 }
             }
 
-            var ____result = new global::Shared.Network.AccessToken(__Token__, __ExpiresIn__, __IssuedAt__);
             reader.Depth--;
             return ____result;
         }
@@ -896,19 +893,15 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_LauncherUrl() => new byte[1 + 11] { 171, 76, 97, 117, 110, 99, 104, 101, 114, 85, 114, 108 };
         // EndPoints
         private static global::System.ReadOnlySpan<byte> GetSpan_EndPoints() => new byte[1 + 9] { 169, 69, 110, 100, 80, 111, 105, 110, 116, 115 };
-        // ContractEndPoints
-        private static global::System.ReadOnlySpan<byte> GetSpan_ContractEndPoints() => new byte[1 + 17] { 177, 67, 111, 110, 116, 114, 97, 99, 116, 69, 110, 100, 80, 111, 105, 110, 116, 115 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.EnvironmentGenericConfig value, global::MessagePack.MessagePackSerializerOptions options)
         {
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(3);
+            writer.WriteMapHeader(2);
             writer.WriteRaw(GetSpan_LauncherUrl());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.LauncherUrl, options);
             writer.WriteRaw(GetSpan_EndPoints());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string[]>(formatterResolver).Serialize(ref writer, value.EndPoints, options);
-            writer.WriteRaw(GetSpan_ContractEndPoints());
-            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string[]>(formatterResolver).Serialize(ref writer, value.ContractEndPoints, options);
         }
 
         public global::Shared.Network.EnvironmentGenericConfig Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -941,11 +934,6 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_EndPoints().Slice(1))) { goto FAIL; }
 
                         ____result.EndPoints = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string[]>(formatterResolver).Deserialize(ref reader, options);
-                        continue;
-                    case 17:
-                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_ContractEndPoints().Slice(1))) { goto FAIL; }
-
-                        ____result.ContractEndPoints = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string[]>(formatterResolver).Deserialize(ref reader, options);
                         continue;
 
                 }
@@ -1262,6 +1250,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_Self() => new byte[1 + 4] { 164, 83, 101, 108, 102 };
         // AllInRoom
         private static global::System.ReadOnlySpan<byte> GetSpan_AllInRoom() => new byte[1 + 9] { 169, 65, 108, 108, 73, 110, 82, 111, 111, 109 };
+        // Students
+        private static global::System.ReadOnlySpan<byte> GetSpan_Students() => new byte[1 + 8] { 168, 83, 116, 117, 100, 101, 110, 116, 115 };
         // Others
         private static global::System.ReadOnlySpan<byte> GetSpan_Others() => new byte[1 + 6] { 166, 79, 116, 104, 101, 114, 115 };
         // Amount
@@ -1280,13 +1270,15 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(7);
+            writer.WriteMapHeader(8);
             writer.WriteRaw(GetSpan_Id());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Id, options);
             writer.WriteRaw(GetSpan_Self());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PrivateUserData>(formatterResolver).Serialize(ref writer, value.Self, options);
             writer.WriteRaw(GetSpan_AllInRoom());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.AllInRoom, options);
+            writer.WriteRaw(GetSpan_Students());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.Students, options);
             writer.WriteRaw(GetSpan_Others());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.Others, options);
             writer.WriteRaw(GetSpan_Amount());
@@ -1332,6 +1324,11 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_AllInRoom().Slice(1))) { goto FAIL; }
 
                         ____result.AllInRoom = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
+                    case 8:
+                        if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 8319395793416320083UL) { goto FAIL; }
+
+                        reader.Skip();
                         continue;
                     case 6:
                         switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
@@ -2953,6 +2950,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_Self() => new byte[1 + 4] { 164, 83, 101, 108, 102 };
         // AllInRoom
         private static global::System.ReadOnlySpan<byte> GetSpan_AllInRoom() => new byte[1 + 9] { 169, 65, 108, 108, 73, 110, 82, 111, 111, 109 };
+        // Students
+        private static global::System.ReadOnlySpan<byte> GetSpan_Students() => new byte[1 + 8] { 168, 83, 116, 117, 100, 101, 110, 116, 115 };
         // Others
         private static global::System.ReadOnlySpan<byte> GetSpan_Others() => new byte[1 + 6] { 166, 79, 116, 104, 101, 114, 115 };
         // Amount
@@ -2971,7 +2970,7 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(9);
+            writer.WriteMapHeader(10);
             writer.WriteRaw(GetSpan_MaxAmount());
             writer.Write(value.MaxAmount);
             writer.WriteRaw(GetSpan_Password());
@@ -2982,6 +2981,8 @@ namespace MessagePack.Formatters.Shared.Network
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PrivateUserData>(formatterResolver).Serialize(ref writer, value.Self, options);
             writer.WriteRaw(GetSpan_AllInRoom());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.AllInRoom, options);
+            writer.WriteRaw(GetSpan_Students());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.Students, options);
             writer.WriteRaw(GetSpan_Others());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Serialize(ref writer, value.Others, options);
             writer.WriteRaw(GetSpan_Amount());
@@ -3031,10 +3032,16 @@ namespace MessagePack.Formatters.Shared.Network
 
                         }
                     case 8:
-                        if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 7237970109966541136UL) { goto FAIL; }
-
-                        ____result.Password = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
-                        continue;
+                        switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
+                        {
+                            default: goto FAIL;
+                            case 7237970109966541136UL:
+                                ____result.Password = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+                            case 8319395793416320083UL:
+                                reader.Skip();
+                                continue;
+                        }
                     case 2:
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 25673UL) { goto FAIL; }
 
@@ -3207,6 +3214,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_Texture() => new byte[1 + 7] { 167, 84, 101, 120, 116, 117, 114, 101 };
         // IsSharing
         private static global::System.ReadOnlySpan<byte> GetSpan_IsSharing() => new byte[1 + 9] { 169, 73, 115, 83, 104, 97, 114, 105, 110, 103 };
+        // IsSharingQuizzesGame
+        private static global::System.ReadOnlySpan<byte> GetSpan_IsSharingQuizzesGame() => new byte[1 + 20] { 180, 73, 115, 83, 104, 97, 114, 105, 110, 103, 81, 117, 105, 122, 122, 101, 115, 71, 97, 109, 101 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.VirtualRoomTickData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -3217,13 +3226,15 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(3);
+            writer.WriteMapHeader(4);
             writer.WriteRaw(GetSpan_HeadRotation());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Serialize(ref writer, value.HeadRotation, options);
             writer.WriteRaw(GetSpan_Texture());
             writer.Write(value.Texture);
             writer.WriteRaw(GetSpan_IsSharing());
             writer.Write(value.IsSharing);
+            writer.WriteRaw(GetSpan_IsSharingQuizzesGame());
+            writer.Write(value.IsSharingQuizzesGame);
         }
 
         public global::Shared.Network.VirtualRoomTickData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -3262,6 +3273,11 @@ namespace MessagePack.Formatters.Shared.Network
 
                         ____result.IsSharing = reader.ReadBoolean();
                         continue;
+                    case 20:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_IsSharingQuizzesGame().Slice(1))) { goto FAIL; }
+
+                        ____result.IsSharingQuizzesGame = reader.ReadBoolean();
+                        continue;
 
                 }
             }
@@ -3279,6 +3295,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_Texture() => new byte[1 + 7] { 167, 84, 101, 120, 116, 117, 114, 101 };
         // IsSharing
         private static global::System.ReadOnlySpan<byte> GetSpan_IsSharing() => new byte[1 + 9] { 169, 73, 115, 83, 104, 97, 114, 105, 110, 103 };
+        // IsSharingQuizzesGame
+        private static global::System.ReadOnlySpan<byte> GetSpan_IsSharingQuizzesGame() => new byte[1 + 20] { 180, 73, 115, 83, 104, 97, 114, 105, 110, 103, 81, 117, 105, 122, 122, 101, 115, 71, 97, 109, 101 };
         // Message
         private static global::System.ReadOnlySpan<byte> GetSpan_Message() => new byte[1 + 7] { 167, 77, 101, 115, 115, 97, 103, 101 };
         // Success
@@ -3293,13 +3311,15 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(5);
+            writer.WriteMapHeader(6);
             writer.WriteRaw(GetSpan_User());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData>(formatterResolver).Serialize(ref writer, value.User, options);
             writer.WriteRaw(GetSpan_Texture());
             writer.Write(value.Texture);
             writer.WriteRaw(GetSpan_IsSharing());
             writer.Write(value.IsSharing);
+            writer.WriteRaw(GetSpan_IsSharingQuizzesGame());
+            writer.Write(value.IsSharingQuizzesGame);
             writer.WriteRaw(GetSpan_Message());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Message, options);
             writer.WriteRaw(GetSpan_Success());
@@ -3350,6 +3370,11 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_IsSharing().Slice(1))) { goto FAIL; }
 
                         ____result.IsSharing = reader.ReadBoolean();
+                        continue;
+                    case 20:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_IsSharingQuizzesGame().Slice(1))) { goto FAIL; }
+
+                        ____result.IsSharingQuizzesGame = reader.ReadBoolean();
                         continue;
 
                 }

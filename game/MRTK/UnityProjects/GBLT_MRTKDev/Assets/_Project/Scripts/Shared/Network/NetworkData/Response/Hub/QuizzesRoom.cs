@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Shared.Network
 {
+    [System.Serializable]
     [MessagePackObject(true)]
     public class QuizzesUserData
     {

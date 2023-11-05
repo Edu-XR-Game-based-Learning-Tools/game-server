@@ -16,9 +16,11 @@ namespace RpcService.Service
         private readonly IJwtTokenValidator _jwtTokenValidator;
 
         public UserService(
-            IUserDataService userDataService)
+            IUserDataService userDataService,
+            IJwtTokenValidator jwtTokenValidator)
         {
             _userDataService = userDataService;
+            _jwtTokenValidator = jwtTokenValidator;
         }
 
         public async UnaryResult<UserData> SyncUserData()
@@ -33,7 +35,7 @@ namespace RpcService.Service
             return userData;
         }
 
-        public async Task<TUser> GetUserIdentity()
+        private async Task<TUser> GetUserIdentity()
         {
             var header = Context.CallContext.RequestHeaders;
             var bytes = header.GetValueBytes("auth-token-bin");

@@ -59,6 +59,7 @@ namespace WebAPI
 
             services.AddControllers();
             services.AddHealthChecks();
+            services.AddAuthorization();
             services.AddMessagePipe();
 
             services.AddCors(options =>
@@ -216,7 +217,6 @@ namespace WebAPI
                 });
 
             app.UseStaticFiles();
-            app.UseHttpsRedirection();
 
             app.UseCors();
 

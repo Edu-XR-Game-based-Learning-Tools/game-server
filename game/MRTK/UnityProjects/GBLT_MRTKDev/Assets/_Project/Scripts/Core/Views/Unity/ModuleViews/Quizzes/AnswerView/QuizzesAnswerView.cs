@@ -21,7 +21,7 @@ namespace Core.View
         [System.Serializable]
         public class LoadingContainer : SubView
         {
-            public LoadingContainer(Transform transform, IObjectResolver container) : base(transform, container)
+            public LoadingContainer(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
             }
         }
@@ -34,7 +34,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private PressableButton[] _optionBtns;
             bool _isAnswered = false;
 
-            public AnswerView(Transform transform, IObjectResolver container) : base(transform, container)
+            public AnswerView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _questionTxt = transform.Find("Header/Question_Txt").GetComponent<TextMeshProUGUI>();
 
@@ -104,7 +104,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private Image _incorrectImg;
             [SerializeField][DebugOnly] private Transform _scoreContainer;
 
-            public ScoreView(Transform transform, IObjectResolver container) : base(transform, container)
+            public ScoreView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _resultTxt = transform.Find("Layout/Content/Result_Txt").GetComponent<TextMeshProUGUI>();
                 _correctImg = transform.Find("Layout/Content/Icon/Incorrect").GetComponent<Image>();
@@ -131,7 +131,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private TextMeshProUGUI _scoreTxt;
             [SerializeField][DebugOnly] private TextMeshProUGUI _rankTxt;
 
-            public RankView(Transform transform, IObjectResolver container) : base(transform, container)
+            public RankView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _nameTxt = transform.Find("Layout/Content/Name_Txt").GetComponent<TextMeshProUGUI>();
                 _avatarImg = transform.Find("Layout/Content/Icon").GetComponent<Image>();
@@ -179,10 +179,10 @@ namespace Core.View
         {
             _object3DContainer = transform.Find("3D_Renderer/Object");
 
-            _loadingContainer = new LoadingContainer(transform.Find("Canvas/LoadingContainer"), _container);
-            _answerView = new AnswerView(transform.Find("Canvas/Answer"), _container);
-            _scoreView = new ScoreView(transform.Find("Canvas/Score"), _container);
-            _rankView = new RankView(transform.Find("Canvas/Rank"), _container);
+            _loadingContainer = new LoadingContainer(transform.Find("Canvas/LoadingContainer"), _container, transform);
+            _answerView = new AnswerView(transform.Find("Canvas/Answer"), _container, transform);
+            _scoreView = new ScoreView(transform.Find("Canvas/Score"), _container, transform);
+            _rankView = new RankView(transform.Find("Canvas/Rank"), _container, transform);
         }
 
         public override void OnReady()

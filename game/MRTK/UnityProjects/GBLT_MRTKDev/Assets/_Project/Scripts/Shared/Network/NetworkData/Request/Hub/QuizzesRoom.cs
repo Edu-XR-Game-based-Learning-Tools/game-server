@@ -24,6 +24,7 @@ namespace Shared.Network
         public int? CurrentQuestionIdx { get; set; }
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class InviteToGameData
     {
@@ -32,6 +33,7 @@ namespace Shared.Network
         public JoinQuizzesData JoinQuizzesData { get; set; }
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class AnswerData
     {

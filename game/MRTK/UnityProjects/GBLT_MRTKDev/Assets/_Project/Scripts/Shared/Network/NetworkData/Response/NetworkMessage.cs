@@ -42,6 +42,7 @@
         public bool Success { get; set; } = true;
     }
 
+    [System.Serializable]
     [MessagePackObject(true)]
     public class BaseDbDto : GeneralResponse
     {

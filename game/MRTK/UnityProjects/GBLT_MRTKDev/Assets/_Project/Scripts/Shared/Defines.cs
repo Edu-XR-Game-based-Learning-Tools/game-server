@@ -23,9 +23,6 @@ namespace Shared
 
         public static class PrefabKey
         {
-            public static string DefaultRoomAvatar = AvatarPaths[0];
-            public static string DefaultRoomModel = ModelPaths[0];
-
             public static string[] AvatarPaths = new string[] {
                 "Assets/_Project/Bundles/Graphics/Avatar/row-1-column-1.png",
                 "Assets/_Project/Bundles/Graphics/Avatar/row-1-column-2.png",
@@ -55,10 +52,10 @@ namespace Shared
             };
 
             public static string[] ModelThumbnailPaths = new string[] {
-                "Assets/_Project/Bundles/Prefabs/AvatarPerson.png",
-                "Assets/_Project/Bundles/Prefabs/AvatarPerson 1.png",
-                "Assets/_Project/Bundles/Prefabs/AvatarPerson 2.png",
-                "Assets/_Project/Bundles/Prefabs/AvatarPerson 3.png",
+                "Assets/_Project/Bundles/Prefabs/Avatar/Person.png",
+                "Assets/_Project/Bundles/Prefabs/Avatar/Person 1.png",
+                "Assets/_Project/Bundles/Prefabs/Avatar/Person 2.png",
+                "Assets/_Project/Bundles/Prefabs/Avatar/Person 3.png",
             };
 
             public static string[] ModelPaths = new string[] {
@@ -67,6 +64,9 @@ namespace Shared
                 "Assets/_Project/Bundles/Prefabs/Avatar/Person 2.prefab",
                 "Assets/_Project/Bundles/Prefabs/Avatar/Person 3.prefab",
             };
+
+            public static string DefaultRoomAvatar = AvatarPaths[0];
+            public static string DefaultRoomModel = ModelPaths[0];
         }
     }
 

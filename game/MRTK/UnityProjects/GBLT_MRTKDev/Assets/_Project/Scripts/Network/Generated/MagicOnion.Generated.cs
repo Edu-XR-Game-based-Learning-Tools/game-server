@@ -161,12 +161,13 @@ namespace MagicOnion.Resolvers
     
         static MagicOnionResolverGetFormatterHelper()
         {
-            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(4)
+            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(5)
             {
                 {typeof(global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.InviteToGameData, global::Shared.Network.PublicUserData>), 0 },
                 {typeof(global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.QuizzesStatusResponse, global::Shared.Network.QuizzesUserData>), 1 },
                 {typeof(global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.RoomStatusResponse, global::Shared.Network.PublicUserData>), 2 },
-                {typeof(global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>), 3 },
+                {typeof(global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>), 3 },
+                {typeof(global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>), 4 },
             };
         }
         internal static object GetFormatter(Type t)
@@ -182,7 +183,8 @@ namespace MagicOnion.Resolvers
                 case 0: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::Shared.Network.InviteToGameData, global::Shared.Network.PublicUserData>(default(global::Shared.Network.InviteToGameData), default(global::Shared.Network.PublicUserData));
                 case 1: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::Shared.Network.QuizzesStatusResponse, global::Shared.Network.QuizzesUserData>(default(global::Shared.Network.QuizzesStatusResponse), default(global::Shared.Network.QuizzesUserData));
                 case 2: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::Shared.Network.RoomStatusResponse, global::Shared.Network.PublicUserData>(default(global::Shared.Network.RoomStatusResponse), default(global::Shared.Network.PublicUserData));
-                case 3: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::System.String, global::System.String, global::System.String>(default(global::System.String), default(global::System.String), default(global::System.String));
+                case 3: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::System.Int32, global::System.Int32>(default(global::System.Int32), default(global::System.Int32));
+                case 4: return new global::MagicOnion.DynamicArgumentTupleFormatter<global::System.String, global::System.String, global::System.String>(default(global::System.String), default(global::System.String), default(global::System.String));
                 default: return null;
             }
         }
@@ -197,6 +199,7 @@ namespace MagicOnion.Resolvers
             _ = MagicOnionResolver.Instance.GetFormatter<global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.InviteToGameData, global::Shared.Network.PublicUserData>>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.QuizzesStatusResponse, global::Shared.Network.QuizzesUserData>>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::MagicOnion.DynamicArgumentTuple<global::Shared.Network.RoomStatusResponse, global::Shared.Network.PublicUserData>>();
+            _ = MagicOnionResolver.Instance.GetFormatter<global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::MessagePack.Nil>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.AnswerData>();
@@ -221,6 +224,7 @@ namespace MagicOnion.Resolvers
             _ = MagicOnionResolver.Instance.GetFormatter<global::System.Byte>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::System.Byte[]>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::System.DateTime>();
+            _ = MagicOnionResolver.Instance.GetFormatter<global::System.Int32>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::System.String>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::System.TimeSpan>();
         }
@@ -429,6 +433,8 @@ namespace Shared.Network
             => base.WriteMessageWithResponseAsync<global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>, global::MessagePack.Nil>(-1223313283, new global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>(name, modelPath, avatarPath));
         public global::System.Threading.Tasks.Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
             => base.WriteMessageWithResponseAsync<global::Shared.Network.VirtualRoomTickData, global::MessagePack.Nil>(752406261, data);
+        public global::System.Threading.Tasks.Task Tick(global::System.String message)
+            => base.WriteMessageWithResponseAsync<global::System.String, global::MessagePack.Nil>(-570628668, message);
         public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
             => base.WriteMessageWithResponseAsync<global::MessagePack.Nil, global::MessagePack.Nil>(-2099297364, global::MessagePack.Nil.Default);
         
@@ -459,6 +465,8 @@ namespace Shared.Network
                 => parent.WriteMessageFireAndForgetAsync<global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>, global::MessagePack.Nil>(-1223313283, new global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>(name, modelPath, avatarPath));
             public global::System.Threading.Tasks.Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
                 => parent.WriteMessageFireAndForgetAsync<global::Shared.Network.VirtualRoomTickData, global::MessagePack.Nil>(752406261, data);
+            public global::System.Threading.Tasks.Task Tick(global::System.String message)
+                => parent.WriteMessageFireAndForgetAsync<global::System.String, global::MessagePack.Nil>(-570628668, message);
             public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
                 => parent.WriteMessageFireAndForgetAsync<global::MessagePack.Nil, global::MessagePack.Nil>(-2099297364, global::MessagePack.Nil.Default);
             
@@ -527,6 +535,9 @@ namespace Shared.Network
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
                 case 752406261: // Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
+                    base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
+                    break;
+                case -570628668: // Task Tick(global::System.String message)
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
                 case -2099297364: // Task CmdToKeepAliveConnection()
@@ -732,6 +743,8 @@ namespace Shared.Network
             DuplexStreamingAsyncMethod = new global::Grpc.Core.Method<global::System.Byte[], global::System.Byte[]>(global::Grpc.Core.MethodType.DuplexStreaming, "ITimerHub", "Connect", marshaller, marshaller);
         }
         
+        public global::System.Threading.Tasks.Task<global::System.Int32> SumAsync(global::System.Int32 x, global::System.Int32 y)
+            => base.WriteMessageWithResponseAsync<global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>, global::System.Int32>(-86482820, new global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>(x, y));
         public global::System.Threading.Tasks.Task SetAsync(global::System.TimeSpan interval)
             => base.WriteMessageWithResponseAsync<global::System.TimeSpan, global::MessagePack.Nil>(-502367419, interval);
         
@@ -750,6 +763,8 @@ namespace Shared.Network
             public global::System.Threading.Tasks.Task DisposeAsync() => throw new global::System.NotSupportedException();
             public global::System.Threading.Tasks.Task WaitForDisconnect() => throw new global::System.NotSupportedException();
         
+            public global::System.Threading.Tasks.Task<global::System.Int32> SumAsync(global::System.Int32 x, global::System.Int32 y)
+                => parent.WriteMessageFireAndForgetAsync<global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>, global::System.Int32>(-86482820, new global::MagicOnion.DynamicArgumentTuple<global::System.Int32, global::System.Int32>(x, y));
             public global::System.Threading.Tasks.Task SetAsync(global::System.TimeSpan interval)
                 => parent.WriteMessageFireAndForgetAsync<global::System.TimeSpan, global::MessagePack.Nil>(-502367419, interval);
             
@@ -772,6 +787,9 @@ namespace Shared.Network
         {
             switch (methodId)
             {
+                case -86482820: // Task<Int32> SumAsync(global::System.Int32 x, global::System.Int32 y)
+                    base.SetResultForResponse<global::System.Int32>(taskCompletionSource, data);
+                    break;
                 case -502367419: // Task SetAsync(global::System.TimeSpan interval)
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;

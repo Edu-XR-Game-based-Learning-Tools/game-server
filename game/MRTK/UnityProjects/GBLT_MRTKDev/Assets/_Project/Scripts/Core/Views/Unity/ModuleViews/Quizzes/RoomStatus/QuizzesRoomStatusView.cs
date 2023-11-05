@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TMPro;
-using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
@@ -36,7 +35,7 @@ namespace Core.View
             [SerializeField][DebugOnly] protected PressableButton[] _quizBtns;
             [SerializeField][DebugOnly] protected QuizzesRoomStatusView _root;
 
-            public SelectQuizView(Transform transform, IObjectResolver container) : base(transform, container)
+            public SelectQuizView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
 
@@ -92,6 +91,7 @@ namespace Core.View
         [SerializeField][DebugOnly] private TextMeshProUGUI _titleTxt;
         [SerializeField][DebugOnly] private TextMeshProUGUI _amountTxt;
 
+        [SerializeField][DebugOnly] private RoomStatusPerson _hostItem;
         [SerializeField][DebugOnly] private QuizzesRoomStatusPerson[] _personItems;
 
         [SerializeField][DebugOnly] private PressableButton _selectQuizBtn;
@@ -124,6 +124,13 @@ namespace Core.View
             _titleTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Title").GetComponent<TextMeshProUGUI>();
             _amountTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
 
+            var hostTransform = transform.Find("");
+            _hostItem = new RoomStatusPerson
+            {
+                Button = hostTransform.GetComponent<PressableButton>(),
+                NameTxt = hostTransform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>(),
+                IconImg = hostTransform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>(),
+            };
             var list = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
             _personItems = new bool[list.childCount].Select((_, idx) =>
             {
@@ -139,7 +146,7 @@ namespace Core.View
             _selectQuizBtn = transform.Find("CanvasDialog/Canvas/Footer/SelectQuiz_Btn").GetComponent<PressableButton>();
             _quizNameTxt = transform.Find("CanvasDialog/Canvas/Footer/SelectQuiz_Btn").GetComponent<TextMeshProUGUI>();
 
-            _selectQuizView = new SelectQuizView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container);
+            _selectQuizView = new SelectQuizView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform);
 
             _selectQuizView.Transform.SetActive(false);
             _quizNameTxt.text = "";
@@ -200,6 +207,23 @@ namespace Core.View
             await FetchCollections();
 
             Refresh();
+        }
+
+        public async UniTask UpdateCharacter(PublicUserData userData, bool isShow = true)
+        {
+            _personItems[userData.Index].Button.SetActive(isShow);
+            if (!isShow) return;
+
+            var avt = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(userData.AvatarPath);
+            if (userData.IsHost)
+            {
+                _hostItem.NameTxt.text = userData.Name;
+                _hostItem.IconImg.sprite = avt;
+                return;
+            }
+
+            _personItems[userData.Index].NameTxt.text = userData.Name;
+            _personItems[userData.Index].IconImg.sprite = avt;
         }
 
         public void Refresh()

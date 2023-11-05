@@ -7,6 +7,7 @@ using Core.Utility;
 using MessagePipe;
 using Microsoft.MixedReality.Toolkit.UX;
 using Shared.Network;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using VContainer;
@@ -23,7 +24,7 @@ namespace Core.View
         [SerializeField][DebugOnly] private PressableButton _roomStatusBtn;
         [SerializeField][DebugOnly] private PressableButton _gameStatusBtn;
         [SerializeField][DebugOnly] private PressableButton _openLastScreenBtn;
-        [SerializeField][DebugOnly] private PressableButton _shareBtn;
+        [SerializeField][DebugOnly] private ToggleCollection _shareToggleCollection;
 
         private void Awake()
         {
@@ -31,9 +32,11 @@ namespace Core.View
             _roomStatusBtn = transform.Find("Canvas/Menu/List").GetChild(1).GetComponent<PressableButton>();
             _gameStatusBtn = transform.Find("Canvas/Menu/List").GetChild(2).GetComponent<PressableButton>();
             _openLastScreenBtn = transform.Find("Canvas/Menu/List").GetChild(3).GetComponent<PressableButton>();
-            _shareBtn = transform.Find("Canvas/Menu/List").GetChild(4).GetComponent<PressableButton>();
+            _shareToggleCollection = transform.Find("Canvas/Menu/Sharing/Toggle List").GetComponent<ToggleCollection>();
 
             RegisterEvents();
+
+            transform.SetActive(false);
         }
 
         [Inject]
@@ -43,6 +46,7 @@ namespace Core.View
         {
             _gameStore = container.Resolve<GameStore>();
             _userDataController = container.Resolve<IUserDataController>();
+            _classRoomHub = container.Resolve<ClassRoomHub>();
         }
 
         private void RegisterEvents()
@@ -51,7 +55,7 @@ namespace Core.View
             {
                 _gameStore.RemoveCurrentModel();
                 (await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.RoomStatus)).Model.Refresh();
+                    "", ViewName.Unity, ModuleName.LandingScreen)).Model.Refresh();
             });
             _roomStatusBtn.OnClicked.AddListener(async () =>
             {
@@ -70,10 +74,19 @@ namespace Core.View
                 _gameStore.OpenLastHiddenModule();
             });
 
-            _shareBtn.OnClicked.AddListener(() =>
+
+            _shareToggleCollection.OnToggleSelected.AddListener((toggleSelectedIndex) =>
             {
-                _userDataController.ServerData.IsSharing = !_userDataController.ServerData.IsSharing;
-                _shareBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = _userDataController.ServerData.IsSharing ? "Stop sharing" : "Share";
+                if (toggleSelectedIndex > -1)
+                {
+                    _userDataController.ServerData.IsSharing = toggleSelectedIndex == 0;
+                    _userDataController.ServerData.IsSharingQuizzesGame = toggleSelectedIndex == 1;
+                }
+                else
+                {
+                    _userDataController.ServerData.IsSharing = false;
+                    _userDataController.ServerData.IsSharingQuizzesGame = false;
+                }
             });
         }
 
@@ -84,6 +97,8 @@ namespace Core.View
             _roomStatusBtn.SetActive(isInRoomView);
             _gameStatusBtn.SetActive(isInRoomView && isInGameView);
             _openLastScreenBtn.SetActive(_gameStore.LastHiddenModule != null);
+            _shareToggleCollection.transform.GetChild(0).SetActive(isInRoomView);
+            _shareToggleCollection.transform.GetChild(1).SetActive(isInGameView && new QuizzesStatus[] { QuizzesStatus.InProgress, QuizzesStatus.End }.Contains(_userDataController.ServerData.RoomStatus.InGameStatus.JoinQuizzesData.QuizzesStatus));
         }
     }
 }

@@ -52,7 +52,7 @@ namespace Core.Service
                 _jwtOptions.Expiration,
                 _jwtOptions.SigningCredentials);
 
-            return new AccessToken(_jwtTokenHandler.WriteToken(jwt), (int)_jwtOptions.ValidFor.TotalSeconds, issuedAt);
+            return new AccessToken() { Token = _jwtTokenHandler.WriteToken(jwt), ExpiresIn = (int)_jwtOptions.ValidFor.TotalSeconds, IssuedAt = issuedAt };
         }
 
         private static ClaimsIdentity GenerateClaimsIdentity(string identityId, string userName, string role)

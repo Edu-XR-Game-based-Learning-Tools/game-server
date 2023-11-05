@@ -1,6 +1,7 @@
 ﻿using Core.Business;
 using Core.EventSignal;
 using Core.Extension;
+using Core.Module;
 using Core.Utility;
 using Core.View;
 using Cysharp.Threading.Tasks;
@@ -9,18 +10,21 @@ using Shared;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using VContainer;
 using VContainer.Unity;
 
 namespace Core.Framework
 {
-    public class VirtualRoomPresenter : ITickable
+    public class VirtualRoomPresenter : MonoBehaviour
     {
-        private readonly IObjectResolver _container;
-        private readonly IDefinitionManager _definitionManager;
-        private readonly IBundleLoader _bundleLoader;
-        private readonly IUserDataController _userDataController;
+        private IObjectResolver _container;
+        private GameStore _gameStore;
+        private IDefinitionManager _definitionManager;
+        private IBundleLoader _bundleLoader;
+        private IUserDataController _userDataController;
 
         [Inject]
         private readonly IPublisher<OnVirtualRoomTickSignal> _onUserTransformChangePublisher;
@@ -28,24 +32,30 @@ namespace Core.Framework
         [Inject]
         protected readonly IPublisher<ShowPopupSignal> _showPopupPublisher;
 
-        private Transform _classRoom;
-        private ClassRoomDefinition _classRoomDefinition;
-        private Transform _seatContainer;
-        private Transform _teacherSeatTransform;
-        private Transform _teacherCharacter;
-        private Transform[] _studentsCharacter;
+        [SerializeField][DebugOnly] private Transform _classRoom;
+        [SerializeField][DebugOnly] private ClassRoomDefinition _classRoomDefinition;
+        [SerializeField][DebugOnly] private Transform _teacherSeatTransform;
+        [SerializeField][DebugOnly] private Transform _teacherCharacter;
+        [SerializeField][DebugOnly] private Transform[] _studentSeatTransforms;
+        [SerializeField][DebugOnly] private Transform[] _studentCharacters = new Transform[0];
 
-        private Transform _MRTKRig;
-        private Camera _shareScreenCam;
-        private RenderTexture _screenRenderTexture;
-        private Material _screenMat;
-        private Texture2D _screenTex;
+        [SerializeField][DebugOnly] private Transform _MRTKRig;
 
-        public VirtualRoomPresenter(
-            IObjectResolver container)
+        [Header("Share Screen")]
+        [SerializeField][DebugOnly] private Camera _shareScreenCam;
+        [SerializeField][DebugOnly] private RenderTexture _screenRenderTexture;
+        [SerializeField][DebugOnly] private Camera _quizzesShareCam;
+        [SerializeField][DebugOnly] private RenderTexture _quizzesShareRenderTexture;
+
+        [SerializeField][DebugOnly] private Texture2D _shareTexture;
+        [SerializeField][DebugOnly] private Texture2D _screenTex;
+
+        [Inject]
+        public void Construct(IObjectResolver container)
         {
             _container = container;
 
+            _gameStore = container.Resolve<GameStore>();
             _definitionManager = container.Resolve<IDefinitionManager>();
             _bundleLoader = container.Resolve<IReadOnlyList<IBundleLoader>>().ElementAt((int)BundleLoaderName.Addressable);
             _userDataController = container.Resolve<IUserDataController>();
@@ -55,82 +65,96 @@ namespace Core.Framework
         {
             _classRoomDefinition = await _definitionManager.GetDefinition<ClassRoomDefinition>("0");
             _classRoom = GameObject.Find("ClassRoom").transform;
-            _seatContainer = _classRoom.Find("Seats");
+
+            _teacherSeatTransform = _classRoom.Find("TeacherSeat");
+            _quizzesShareCam = _teacherSeatTransform.Find("ShareScreenCam").GetComponent<Camera>();
+            _quizzesShareRenderTexture = _quizzesShareCam.targetTexture;
+            var studentSeatContainer = _classRoom.Find("Seats");
+            _studentSeatTransforms = new Transform[studentSeatContainer.childCount];
+            for (int idx = 0; idx < studentSeatContainer.childCount; idx++)
+                _studentSeatTransforms[idx] = studentSeatContainer.GetChild(idx);
 
             _MRTKRig = GameObject.Find("MRTK XR Rig").transform;
-            _shareScreenCam = GameObject.Find("MRTK XR Rig/Camera Offset/ShareScreenCam").GetComponent<Camera>();
+            _shareScreenCam = GameObject.Find("MRTK XR Rig/Camera Offset/Main Camera/ShareScreenCam").GetComponent<Camera>();
             _screenRenderTexture = _shareScreenCam.targetTexture;
-            _screenMat = _classRoom.Find("Environment/Projector/Screen/16:9").GetComponent<MeshRenderer>().material;
-
             _screenTex = new Texture2D(_screenRenderTexture.width, _screenRenderTexture.height);
-            _screenMat.SetTexture("_EmissionMap", _screenTex);
 
             _classRoom.SetActive(false);
+
+            Camera.onPostRender += OnPostRenderCallback;
         }
 
         #region Setup Environment
 
         #region Spawn First Enter
 
-        private async UniTask SpawnTeacherSeat()
-        {
-            if (_teacherSeatTransform != null) return;
-
-            GameObject prefab = await _bundleLoader.LoadAssetAsync<GameObject>(CoreDefines.PrefabKey.TeacherSeat);
-            _teacherSeatTransform = _container.Instantiate(prefab, _classRoom).transform;
-            _teacherSeatTransform.position = _classRoomDefinition.TeacherSeatPosition.ToVector3();
-            _teacherSeatTransform.eulerAngles = _classRoomDefinition.TeacherSeatRotation.ToVector3();
-        }
-
-        private Vector3 CalculateSeatPosition(int index)
-        {
-            float indexPos = index % (_classRoomDefinition.MaxColPerRow / 2);
-            float xNextPos = indexPos * _classRoomDefinition.ColSpace + _classRoomDefinition.ColSpace / 1.5f;
-            float xSide = index % _classRoomDefinition.MaxColPerRow >= _classRoomDefinition.MaxColPerRow / 2 ? 1 : -1;
-
-            float x = _classRoomDefinition.StartCenterSeatPosition.x + xNextPos * xSide;
-            float z = _classRoomDefinition.StartCenterSeatPosition.z - index / _classRoomDefinition.MaxColPerRow * _classRoomDefinition.RowSpace;
-            return new Vector3(x, _classRoomDefinition.StartCenterSeatPosition.y, z);
-        }
-
-        private async UniTask SpawnStudentSeats(int seatAmount)
-        {
-            while (_seatContainer.childCount < seatAmount)
-            {
-                GameObject prefab = await _bundleLoader.LoadAssetAsync<GameObject>(CoreDefines.PrefabKey.StudentSeat);
-                GameObject obj = _container.Instantiate(prefab, _seatContainer);
-                obj.transform.position = CalculateSeatPosition(_seatContainer.childCount - 1);
-            }
-
-            for (int idx = seatAmount; idx < _seatContainer.childCount; idx++)
-                _seatContainer.GetChild(idx).SetActive(false);
-        }
-
-        private async UniTask SetupCharacter(PublicUserData user = null)
+        private async UniTask<Transform> SpawnCharacter(PublicUserData user = null, bool isSelf = false)
         {
             var data = user ?? _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+
             var prefabPath = !string.IsNullOrEmpty(data.ModelPath)
                 ? data.ModelPath : Defines.PrefabKey.DefaultRoomModel;
+            Transform parent = GetCharacterParent(user);
+            if (parent.childCount == 0 || prefabPath != parent.GetChild(0).name)
+            {
+                DestroyCharacter(data);
 
-            Transform parent = OnLeave(data);
+                GameObject prefab = await ((UserDataController)_userDataController).LocalUserCache.GetModel(prefabPath);
+                var obj = _container.Instantiate(prefab, parent).transform;
 
-            GameObject prefab = await _bundleLoader.LoadAssetAsync<GameObject>(prefabPath);
-            var obj = _container.Instantiate(prefab, parent).transform;
-            obj.transform.eulerAngles = data.HeadRotation.ToVector3();
-            if (data.IsHost) _teacherCharacter = obj;
-            else _studentsCharacter[data.Index] = obj;
-            _MRTKRig.position = obj.Find("EyeCamPosition").position;
+                obj.transform.eulerAngles = data.HeadRotation.ToVector3();
+                if (data.IsHost) _teacherCharacter = obj;
+                else _studentCharacters[data.Index] = obj;
+            }
+
+            if (isSelf)
+            {
+                _MRTKRig.position = parent.GetChild(0).Find("EyeCamPosition").position;
+                _MRTKRig.rotation = parent.GetChild(0).Find("EyeCamPosition").rotation;
+            }
+
+            if (data.IsHost) return _teacherCharacter;
+            else return _studentCharacters[data.Index];
+        }
+
+        private async UniTask UpdateCharacterCanvas(PublicUserData user, Transform character)
+        {
+            character.Find("Canvas/Side/Title").GetComponent<TextMeshProUGUI>().text = user.Name;
+            character.Find("Canvas/Side/Image").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(user.AvatarPath);
+
+            character.Find("Canvas/Flip/Title").GetComponent<TextMeshProUGUI>().text = user.Name;
+            character.Find("Canvas/Flip/Image").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(user.AvatarPath);
+        }
+
+        private async UniTask UpdateModuleUI(PublicUserData user, bool isShow = true)
+        {
+            if (_gameStore.GState.HasModel<RoomStatusModel>())
+            {
+                await (await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(moduleName: ModuleName.RoomStatus)).ViewContext.View.GetComponent<RoomStatusView>().UpdateCharacter(user, isShow);
+            }
+
+            if (_gameStore.GState.HasModel<QuizzesRoomStatusModel>())
+            {
+                await (await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(moduleName: ModuleName.QuizzesRoomStatus)).ViewContext.View.GetComponent<QuizzesRoomStatusView>().UpdateCharacter(user, isShow);
+            }
+        }
+
+        private async UniTask UpdateCharacter(PublicUserData user)
+        {
+            await UpdateModuleUI(user);
+            var character = await SpawnCharacter(user, _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index);
+            await UpdateCharacterCanvas(user, character);
         }
 
         public async UniTask Spawn() // 24 - 48
         {
-            await SpawnTeacherSeat();
+            foreach (Transform transform in _studentCharacters)
+                if (transform != null)
+                    Destroy(transform.gameObject);
+            _studentCharacters = new Transform[_studentSeatTransforms.Length];
 
-            var maxSeat = _userDataController.ServerData.RoomStatus.RoomStatus.MaxAmount;
-            await SpawnStudentSeats(maxSeat);
+            foreach (var user in _userDataController.ServerData.RoomStatus.RoomStatus.AllInRoom) await UpdateCharacter(user);
 
-            _studentsCharacter = new Transform[maxSeat];
-            await SetupCharacter();
             _classRoom.SetActive(true);
         }
 
@@ -138,69 +162,122 @@ namespace Core.Framework
 
         public async void OnJoin(PublicUserData user)
         {
-            await SetupCharacter(user);
+            await UpdateCharacter(user);
         }
 
         public Transform GetCharacterParent(PublicUserData user)
         {
-            Transform userSeat = user.IsHost ? _teacherSeatTransform : _seatContainer.GetChild(user.Index);
+            Transform userSeat = user.IsHost ? _teacherSeatTransform : _studentSeatTransforms[user.Index];
             Transform parent = userSeat.Find("CharPosition");
             return parent;
         }
 
-        public Transform OnLeave(PublicUserData user = null)
+        private Transform DestroyCharacter(PublicUserData user)
         {
+            Debug.Log($"DestroyCharacter {user.IsHost}");
             Transform parent = GetCharacterParent(user);
 
             foreach (Transform child in parent)
-                Object.Destroy(child.gameObject);
-            if (!user.IsHost) _studentsCharacter[user.Index] = null;
+                Destroy(child.gameObject);
+            if (user.IsHost) _teacherCharacter = null;
+            else _studentCharacters[user.Index] = null;
 
             return parent;
+        }
+
+        public void OnLeave(PublicUserData user)
+        {
+            Debug.Log($"OnLeave");
+            DestroyCharacter(user);
+            _ = UpdateModuleUI(user, false);
+            if (_userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index)
+                Clean();
         }
 
         #endregion Setup Environment
 
         public void Clean()
         {
-            foreach (Transform child in _studentsCharacter)
-                if (child != null) Object.Destroy(child.gameObject);
-            if (_teacherCharacter != null) Object.Destroy(_teacherCharacter.gameObject);
+            foreach (Transform child in _studentCharacters)
+                if (child != null) Destroy(child.gameObject);
+            if (_teacherCharacter != null) Destroy(_teacherCharacter.gameObject);
 
             _classRoom.SetActive(false);
-            _userDataController.ServerData.RoomStatus = null;
         }
 
+        #region Sharing
+        [SerializeField][DebugOnly] bool _isSharingQuizzesCache = false;
+        [SerializeField][DebugOnly] bool _isSharingCache = false;
+        private void UpdateShareTexture()
+        {
+            if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return;
+
+            if (_userDataController.ServerData.IsSharingQuizzesGame)
+            //&& _userDataController.ServerData.IsSharingQuizzesGame != _isSharingQuizzesCache)
+            {
+                _shareTexture = _quizzesShareRenderTexture.ToTexture2D();
+            }
+            else if (_userDataController.ServerData.IsSharing)
+            //&& _userDataController.ServerData.IsSharing != _isSharingCache)
+            {
+                _shareTexture = _screenRenderTexture.ToTexture2D();
+            }
+            _isSharingQuizzesCache = _userDataController.ServerData.IsSharingQuizzesGame;
+            _isSharingCache = _userDataController.ServerData.IsSharing;
+        }
+
+        [SerializeField][DebugOnly] bool _isStillNoTeacher = false;
+        [SerializeField] float _delaySyncDuration = 1f;
+        [SerializeField][DebugOnly] float _delaySyncData;
         private void PublishTickData()
         {
-            if (_teacherCharacter == null || !_teacherCharacter.gameObject.activeInHierarchy) return;
-
-            Texture2D texture = null;
-            if (_userDataController.ServerData.IsSharing)
+            if (_teacherCharacter == null || !_teacherCharacter.gameObject.activeInHierarchy)
             {
-                RenderTexture.active = _screenRenderTexture;
-                texture = new Texture2D(_screenRenderTexture.width, _screenRenderTexture.height);
-                texture.ReadPixels(new Rect(0, 0, texture.width, texture.height), 0, 0);
-                texture.Apply();
+                if (!_isStillNoTeacher)
+                    if (_teacherSeatTransform.Find("CharPosition").childCount > 0)
+                        _teacherCharacter = _teacherSeatTransform.Find("CharPosition").GetChild(0);
+                if (_teacherCharacter == null) _isStillNoTeacher = true;
+                else PublishTickData();
+                return;
             }
+            _isStillNoTeacher = false;
+
+            _delaySyncData -= Time.deltaTime;
+            if (_delaySyncData > 0)
+                return;
+
+            _delaySyncData = _delaySyncDuration;
+            UpdateShareTexture();
 
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(new VirtualRoomTickData
             {
                 HeadRotation = _teacherCharacter.eulerAngles.ToVec3D(),
-                Texture = _userDataController.ServerData.IsSharing ? null : texture.EncodeToJPG(),
+                Texture = _shareTexture == null ? null : _shareTexture.EncodeToJPG(),
                 IsSharing = _userDataController.ServerData.IsSharing,
+                IsSharingQuizzesGame = _userDataController.ServerData.IsSharingQuizzesGame,
             }));
         }
 
-        public void Tick()
+        private void OnPostRenderCallback(Camera cam)
         {
             if (!_userDataController.ServerData.IsInRoom) return;
             PublishTickData();
         }
+        #endregion Sharing
+
+        private void Update()
+        {
+            if (!_userDataController.ServerData.IsInRoom) return;
+        }
+
+        private void OnDestroy()
+        {
+            Camera.onPostRender -= OnPostRenderCallback;
+        }
 
         public void OnTransform(PublicUserData user)
         {
-            Transform userChar = user.IsHost ? _teacherCharacter : _studentsCharacter[user.Index];
+            Transform userChar = user.IsHost ? _teacherCharacter : _studentCharacters[user.Index];
             if (userChar == null) return;
 
             userChar.transform.eulerAngles = user.HeadRotation.ToVector3();
@@ -215,7 +292,7 @@ namespace Core.Framework
 
         public async void OnUpdateAvatar(PublicUserData user)
         {
-            await SetupCharacter(user);
+            await UpdateCharacter(user);
         }
 
         #region Quizzes
@@ -227,7 +304,7 @@ namespace Core.Framework
 
         private Transform GetSelfTableUI()
         {
-            Transform userSeat = _self.IsHost ? _teacherSeatTransform : _seatContainer.GetChild(_self.Index);
+            Transform userSeat = _self.IsHost ? _teacherSeatTransform : _studentSeatTransforms[_self.Index];
             Transform ui = userSeat.Find("UI");
             return ui;
         }

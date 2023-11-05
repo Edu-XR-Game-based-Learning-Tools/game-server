@@ -182,7 +182,7 @@ namespace Core.View
                     RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData()
                     {
                         Password = value1,
-                        Amount = int.Parse(value2),
+                        Amount = value2.IsNullOrEmpty() ? 48 : int.Parse(value2),
                     }, true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
@@ -191,7 +191,7 @@ namespace Core.View
                     await OnSuccessJoinRoom(response);
 
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
-                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Capacity (24-48, Default: 24)" }));
+                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Capacity (24-48, Default: 48)" }));
             });
 
             _loginBtn.OnClicked.AddListener(async () =>
