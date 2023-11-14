@@ -54,17 +54,17 @@ namespace Core.Framework
             _classRoomHub.Init();
 
             //await _gameStore.GetOrCreateModule<IDummy, DummyModel>(
-            //    "", ViewName.Unity, ModuleName.Dummy);
+            //    moduleName:, ModuleName.Dummy);
 
-            await _gameStore.GetOrCreateModule<SplashScreen, SplashScreenModel>(
-                "", ViewName.Unity, ModuleName.SplashScreen);
+            await _gameStore.GetOrCreateModel<SplashScreen, SplashScreenModel>(
+                moduleName: ModuleName.SplashScreen);
 
-            await _gameStore.GetOrCreateModule<Popup, PopupModel>(
-                "", ViewName.Unity, ModuleName.Popup);
-            await _gameStore.GetOrCreateModule<Toast, ToastModel>(
-                "", ViewName.Unity, ModuleName.Toast);
-            await _gameStore.GetOrCreateModule<Loading, LoadingModel>(
-                "", ViewName.Unity, ModuleName.Loading);
+            await _gameStore.GetOrCreateModel<Popup, PopupModel>(
+                moduleName: ModuleName.Popup);
+            await _gameStore.GetOrCreateModel<Toast, ToastModel>(
+                moduleName: ModuleName.Toast);
+            await _gameStore.GetOrCreateModel<Loading, LoadingModel>(
+                moduleName: ModuleName.Loading);
         }
 
         public void Out()

@@ -218,6 +218,7 @@ namespace MagicOnion.Resolvers
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.QuizzesUserData>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.RegisterRequest>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.RoomStatusResponse>();
+            _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.SharingTickData>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.UserData>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.VirtualRoomTickData>();
             _ = MagicOnionResolver.Instance.GetFormatter<global::Shared.Network.VirtualRoomTickResponse>();
@@ -433,6 +434,8 @@ namespace Shared.Network
             => base.WriteMessageWithResponseAsync<global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>, global::MessagePack.Nil>(-1223313283, new global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>(name, modelPath, avatarPath));
         public global::System.Threading.Tasks.Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
             => base.WriteMessageWithResponseAsync<global::Shared.Network.VirtualRoomTickData, global::MessagePack.Nil>(752406261, data);
+        public global::System.Threading.Tasks.Task SharingTickSync(global::Shared.Network.SharingTickData data)
+            => base.WriteMessageWithResponseAsync<global::Shared.Network.SharingTickData, global::MessagePack.Nil>(1826948449, data);
         public global::System.Threading.Tasks.Task Tick(global::System.String message)
             => base.WriteMessageWithResponseAsync<global::System.String, global::MessagePack.Nil>(-570628668, message);
         public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
@@ -465,6 +468,8 @@ namespace Shared.Network
                 => parent.WriteMessageFireAndForgetAsync<global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>, global::MessagePack.Nil>(-1223313283, new global::MagicOnion.DynamicArgumentTuple<global::System.String, global::System.String, global::System.String>(name, modelPath, avatarPath));
             public global::System.Threading.Tasks.Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
                 => parent.WriteMessageFireAndForgetAsync<global::Shared.Network.VirtualRoomTickData, global::MessagePack.Nil>(752406261, data);
+            public global::System.Threading.Tasks.Task SharingTickSync(global::Shared.Network.SharingTickData data)
+                => parent.WriteMessageFireAndForgetAsync<global::Shared.Network.SharingTickData, global::MessagePack.Nil>(1826948449, data);
             public global::System.Threading.Tasks.Task Tick(global::System.String message)
                 => parent.WriteMessageFireAndForgetAsync<global::System.String, global::MessagePack.Nil>(-570628668, message);
             public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
@@ -506,6 +511,12 @@ namespace Shared.Network
                         receiver.OnRoomTick(value);
                     }
                     break;
+                case -1498437807: // Void OnSharingTick(global::Shared.Network.SharingTickData response)
+                    {
+                        var value = base.Deserialize<global::Shared.Network.SharingTickData>(data);
+                        receiver.OnSharingTick(value);
+                    }
+                    break;
                 case -1598688755: // Void OnTick(global::System.String message)
                     {
                         var value = base.Deserialize<global::System.String>(data);
@@ -535,6 +546,9 @@ namespace Shared.Network
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
                 case 752406261: // Task VirtualRoomTickSync(global::Shared.Network.VirtualRoomTickData data)
+                    base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
+                    break;
+                case 1826948449: // Task SharingTickSync(global::Shared.Network.SharingTickData data)
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
                 case -570628668: // Task Tick(global::System.String message)
@@ -583,8 +597,8 @@ namespace Shared.Network
             => base.WriteMessageWithResponseAsync<global::MessagePack.Nil, global::MessagePack.Nil>(-1701585166, global::MessagePack.Nil.Default);
         public global::System.Threading.Tasks.Task NextQuestion()
             => base.WriteMessageWithResponseAsync<global::MessagePack.Nil, global::MessagePack.Nil>(976212, global::MessagePack.Nil.Default);
-        public global::System.Threading.Tasks.Task EndQuiz()
-            => base.WriteMessageWithResponseAsync<global::MessagePack.Nil, global::MessagePack.Nil>(1845416399, global::MessagePack.Nil.Default);
+        public global::System.Threading.Tasks.Task EndSession()
+            => base.WriteMessageWithResponseAsync<global::MessagePack.Nil, global::MessagePack.Nil>(1933187950, global::MessagePack.Nil.Default);
         public global::System.Threading.Tasks.Task Answer(global::Shared.Network.AnswerData data)
             => base.WriteMessageWithResponseAsync<global::Shared.Network.AnswerData, global::MessagePack.Nil>(-112287489, data);
         public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
@@ -619,8 +633,8 @@ namespace Shared.Network
                 => parent.WriteMessageFireAndForgetAsync<global::MessagePack.Nil, global::MessagePack.Nil>(-1701585166, global::MessagePack.Nil.Default);
             public global::System.Threading.Tasks.Task NextQuestion()
                 => parent.WriteMessageFireAndForgetAsync<global::MessagePack.Nil, global::MessagePack.Nil>(976212, global::MessagePack.Nil.Default);
-            public global::System.Threading.Tasks.Task EndQuiz()
-                => parent.WriteMessageFireAndForgetAsync<global::MessagePack.Nil, global::MessagePack.Nil>(1845416399, global::MessagePack.Nil.Default);
+            public global::System.Threading.Tasks.Task EndSession()
+                => parent.WriteMessageFireAndForgetAsync<global::MessagePack.Nil, global::MessagePack.Nil>(1933187950, global::MessagePack.Nil.Default);
             public global::System.Threading.Tasks.Task Answer(global::Shared.Network.AnswerData data)
                 => parent.WriteMessageFireAndForgetAsync<global::Shared.Network.AnswerData, global::MessagePack.Nil>(-112287489, data);
             public global::System.Threading.Tasks.Task CmdToKeepAliveConnection()
@@ -644,12 +658,6 @@ namespace Shared.Network
                         receiver.OnLeave(value.Item1, value.Item2);
                     }
                     break;
-                case 1062809434: // Void OnAnswer(global::Shared.Network.AnswerData data)
-                    {
-                        var value = base.Deserialize<global::Shared.Network.AnswerData>(data);
-                        receiver.OnAnswer(value);
-                    }
-                    break;
                 case 36572012: // Void OnStart(global::Shared.Network.QuizzesStatusResponse status)
                     {
                         var value = base.Deserialize<global::Shared.Network.QuizzesStatusResponse>(data);
@@ -662,10 +670,10 @@ namespace Shared.Network
                         receiver.OnDonePreview();
                     }
                     break;
-                case -442249483: // Void OnEndQuestion()
+                case -442249483: // Void OnEndQuestion(global::Shared.Network.QuizzesStatusResponse status)
                     {
-                        var value = base.Deserialize<global::MessagePack.Nil>(data);
-                        receiver.OnEndQuestion();
+                        var value = base.Deserialize<global::Shared.Network.QuizzesStatusResponse>(data);
+                        receiver.OnEndQuestion(value);
                     }
                     break;
                 case -1830126295: // Void OnNextQuestion(global::Shared.Network.QuizzesStatusResponse status)
@@ -674,10 +682,22 @@ namespace Shared.Network
                         receiver.OnNextQuestion(value);
                     }
                     break;
-                case -2117137532: // Void OnEndQuiz()
+                case -2117137532: // Void OnEndQuiz(global::Shared.Network.QuizzesStatusResponse status)
+                    {
+                        var value = base.Deserialize<global::Shared.Network.QuizzesStatusResponse>(data);
+                        receiver.OnEndQuiz(value);
+                    }
+                    break;
+                case -2136871641: // Void OnEndSession()
                     {
                         var value = base.Deserialize<global::MessagePack.Nil>(data);
-                        receiver.OnEndQuiz();
+                        receiver.OnEndSession();
+                    }
+                    break;
+                case 1062809434: // Void OnAnswer(global::Shared.Network.AnswerData data)
+                    {
+                        var value = base.Deserialize<global::Shared.Network.AnswerData>(data);
+                        receiver.OnAnswer(value);
                     }
                     break;
             }
@@ -708,7 +728,7 @@ namespace Shared.Network
                 case 976212: // Task NextQuestion()
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
-                case 1845416399: // Task EndQuiz()
+                case 1933187950: // Task EndSession()
                     base.SetResultForResponse<global::MessagePack.Nil>(taskCompletionSource, data);
                     break;
                 case -112287489: // Task Answer(global::Shared.Network.AnswerData data)

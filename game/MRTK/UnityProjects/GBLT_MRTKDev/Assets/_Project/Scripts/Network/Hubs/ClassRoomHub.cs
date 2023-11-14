@@ -78,7 +78,8 @@ namespace Shared.Network
 
         private void OnVirtualRoomTickHandler(OnVirtualRoomTickSignal signal)
         {
-            _client.VirtualRoomTickSync(signal.TickData);
+            if (signal.TickData != null) _client.VirtualRoomTickSync(signal.TickData);
+            if (signal.SharingTickData != null) _client.SharingTickSync(signal.SharingTickData);
         }
 
         public async Task LeaveAsync()
@@ -127,7 +128,12 @@ namespace Shared.Network
         {
             Debug.Log("Join User:" + user.Name);
 
+            PrivateUserData self = null;
+            if (_userDataController.ServerData.RoomStatus.RoomStatus != null)
+                self = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+
             _userDataController.ServerData.RoomStatus.RoomStatus = status;
+            _userDataController.ServerData.RoomStatus.RoomStatus.Self = self ?? status.Self;
             _virtualRoomPresenter.OnJoin(user);
         }
 
@@ -136,12 +142,22 @@ namespace Shared.Network
             Debug.Log("Leave User:" + user.Name);
 
             _virtualRoomPresenter.OnLeave(user);
-            _userDataController.ServerData.RoomStatus.RoomStatus = _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index ? null : status;
+            PrivateUserData self = null;
+            if (_userDataController.ServerData.RoomStatus.RoomStatus != null)
+                self = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+            bool isYou = _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index;
+            _userDataController.ServerData.RoomStatus.RoomStatus = isYou ? null : status;
+            if (!isYou) _userDataController.ServerData.RoomStatus.RoomStatus.Self = self ?? status.Self;
         }
 
         public void OnRoomTick(VirtualRoomTickResponse response)
         {
             _virtualRoomPresenter.OnRoomTick(response);
+        }
+
+        public void OnSharingTick(SharingTickData response)
+        {
+            _virtualRoomPresenter.OnSharingTick(response);
         }
 
         public void OnTick(string message)
@@ -157,13 +173,27 @@ namespace Shared.Network
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
                 _gameStore.RemoveCurrentModel();
-                await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
-                    "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
+                await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                    moduleName: ModuleName.QuizzesRoomStatus);
             }, noAction: (_, _) => { }));
+        }
+
+        private void UpdateAvatarData(PublicUserData user, PublicUserData newItem)
+        {
+            user.Name = newItem.Name;
+            user.AvatarPath = newItem.AvatarPath;
+            user.ModelPath = newItem.ModelPath;
         }
 
         public void OnUpdateAvatar(PublicUserData user)
         {
+            PrivateUserData self = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+            if (user.ConnectionId == self.ConnectionId) UpdateAvatarData(self, user);
+
+            var allInRoom = _userDataController.ServerData.RoomStatus.RoomStatus.AllInRoom;
+            for (int idx = 0; idx < allInRoom.Length; idx++)
+                if (user.ConnectionId == allInRoom[idx].ConnectionId) UpdateAvatarData(allInRoom[idx], user);
+
             _virtualRoomPresenter.OnUpdateAvatar(user);
         }
 

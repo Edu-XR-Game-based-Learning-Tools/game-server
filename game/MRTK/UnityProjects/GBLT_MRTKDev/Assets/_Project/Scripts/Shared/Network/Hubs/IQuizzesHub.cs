@@ -21,7 +21,7 @@ namespace Shared.Network
 
         Task NextQuestion();
 
-        Task EndQuiz();
+        Task EndSession();
 
         // Player
         Task Answer(AnswerData data);
@@ -36,18 +36,19 @@ namespace Shared.Network
 
         void OnLeave(QuizzesStatusResponse status, QuizzesUserData user);
 
-        // To host
-        void OnAnswer(AnswerData data);
-
-        // To player
         void OnStart(QuizzesStatusResponse status);
 
         void OnDonePreview();
 
-        void OnEndQuestion();
+        void OnEndQuestion(QuizzesStatusResponse status);
 
         void OnNextQuestion(QuizzesStatusResponse status);
 
-        void OnEndQuiz();
+        void OnEndQuiz(QuizzesStatusResponse status);
+
+        void OnEndSession();
+
+        // To host
+        void OnAnswer(AnswerData data);
     }
 }

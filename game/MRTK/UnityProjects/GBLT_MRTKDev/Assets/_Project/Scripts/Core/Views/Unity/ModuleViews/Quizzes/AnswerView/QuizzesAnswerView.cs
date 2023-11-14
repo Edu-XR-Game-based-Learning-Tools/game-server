@@ -1,10 +1,10 @@
 using Core.Business;
 using Core.Extension;
 using Core.Framework;
-using Core.Module;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
 using Microsoft.MixedReality.Toolkit.UX;
+using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +12,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using VContainer;
-using static Core.View.QuizzesQuestionView;
 
 namespace Core.View
 {
-    public class QuizzesAnswerView : UnityView
+    public class QuizzesAnswerView : UnityView, IQuizzesManualHandling
     {
         [System.Serializable]
         public class LoadingContainer : SubView
@@ -29,6 +28,8 @@ namespace Core.View
         [System.Serializable]
         public class AnswerView : ObjectQuizVisual
         {
+            private readonly QuizzesHub _quizzesHub;
+
             [SerializeField][DebugOnly] private TextMeshProUGUI _questionTxt;
 
             [SerializeField][DebugOnly] private PressableButton[] _optionBtns;
@@ -36,6 +37,8 @@ namespace Core.View
 
             public AnswerView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
+                _quizzesHub = container.Resolve<QuizzesHub>();
+
                 _questionTxt = transform.Find("Header/Question_Txt").GetComponent<TextMeshProUGUI>();
 
                 var optionParent = transform.Find("Footer/Options");
@@ -78,6 +81,10 @@ namespace Core.View
                         bool[] options = new bool[_optionBtns.Length];
                         options[index] = true;
                         EnableOption(options);
+                        _quizzesHub.Answer(new AnswerData()
+                        {
+                            AnswerIdx = index,
+                        });
                     });
                 }
             }
@@ -86,9 +93,10 @@ namespace Core.View
             {
                 _isAnswered = false;
                 _questionTxt.text = data.Question;
+                EnableOption();
                 for (int idx = 0; idx < _optionBtns.Length; idx++)
                 {
-                    _optionBtns[idx].SetActive(idx < data.Answers.Length);
+                    _optionBtns[idx].SetActive(idx < data.Answers.Length && !data.Answers[idx].IsNullOrEmpty());
                     if (idx >= data.Answers.Length) continue;
                     _optionBtns[idx].transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = data.Answers[idx];
                 }
@@ -104,22 +112,32 @@ namespace Core.View
             [SerializeField][DebugOnly] private Image _incorrectImg;
             [SerializeField][DebugOnly] private Transform _scoreContainer;
 
+            protected UserDataController _userDataController;
+
             public ScoreView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
+                _userDataController = container.Resolve<IUserDataController>() as UserDataController;
+
                 _resultTxt = transform.Find("Layout/Content/Result_Txt").GetComponent<TextMeshProUGUI>();
                 _correctImg = transform.Find("Layout/Content/Icon/Incorrect").GetComponent<Image>();
                 _incorrectImg = transform.Find("Layout/Content/Icon/Correct").GetComponent<Image>();
                 _scoreContainer = transform.Find("Layout/Content/Score");
             }
 
-            public void UpdateContent(bool isCorrect = false, int score = 0)
+            private float _lastScore = 0f;
+            public void UpdateContent()
             {
-                _resultTxt.text = isCorrect ? "CORRECT" : "INCORRECT";
-                _resultTxt.color = isCorrect ? Color.green : Color.red;
-                _correctImg.SetActive(isCorrect);
-                _incorrectImg.SetActive(!isCorrect);
-                _scoreContainer.SetActive(isCorrect);
-                _incorrectImg.GetComponentInChildren<TextMeshProUGUI>().text = $"+ {score}";
+                QuizzesUserData data = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
+                float changedScore = data.Score - _lastScore;
+                _resultTxt.text = changedScore > 0 ? "CORRECT" : "INCORRECT";
+                _resultTxt.color = changedScore > 0 ? Color.green : Color.red;
+                _correctImg.SetActive(changedScore > 0);
+                _incorrectImg.SetActive(!(changedScore > 0));
+
+                _scoreContainer.SetActive(changedScore > 0);
+                _incorrectImg.GetComponentInChildren<TextMeshProUGUI>().text = $"+ {data.Score - _lastScore}";
+
+                _lastScore = data.Score;
             }
         }
 
@@ -131,20 +149,25 @@ namespace Core.View
             [SerializeField][DebugOnly] private TextMeshProUGUI _scoreTxt;
             [SerializeField][DebugOnly] private TextMeshProUGUI _rankTxt;
 
+            protected UserDataController _userDataController;
+
             public RankView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
+                _userDataController = container.Resolve<IUserDataController>() as UserDataController;
+
                 _nameTxt = transform.Find("Layout/Content/Name_Txt").GetComponent<TextMeshProUGUI>();
                 _avatarImg = transform.Find("Layout/Content/Icon").GetComponent<Image>();
                 _scoreTxt = transform.Find("Layout/Content/Score_Txt").GetComponent<TextMeshProUGUI>();
                 _rankTxt = transform.Find("Layout/Content/Rank_Txt").GetComponent<TextMeshProUGUI>();
             }
 
-            public void UpdateContent(string name, Sprite sprite, int score, int rank)
+            public async UniTask UpdateContent()
             {
-                _nameTxt.text = name;
-                _avatarImg.sprite = sprite;
-                _scoreTxt.text = $"Score: {score}";
-                _rankTxt.text = $"Rank: {rank}";
+                QuizzesUserData data = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
+                _nameTxt.text = data.UserData.Name;
+                _avatarImg.sprite = await _userDataController.LocalUserCache.GetSprite(data.UserData.AvatarPath);
+                _scoreTxt.text = $"Score: {data.Score}";
+                _rankTxt.text = $"Rank: {data.Rank}";
             }
         }
 
@@ -161,17 +184,15 @@ namespace Core.View
         [SerializeField][DebugOnly] private ScoreView _scoreView;
         [SerializeField][DebugOnly] private RankView _rankView;
 
-        [Inject]
-        public void Init(
-            GameStore gameStore,
-            IObjectResolver container)
+        public void Init(IObjectResolver container)
         {
             _container = container;
-            _gameStore = gameStore;
+            _gameStore = container.Resolve<GameStore>();
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _userDataController = container.Resolve<IUserDataController>();
 
+            OnReady();
             transform.SetActive(false);
         }
 
@@ -195,20 +216,22 @@ namespace Core.View
         public async UniTask SetupQuestion()
         {
             QuizzesStatusResponse status = _userDataController.ServerData.RoomStatus.InGameStatus;
-            int questionIdx = (int)status.JoinQuizzesData.CurrentQuestionIdx;
+            int questionIdx = status.JoinQuizzesData.CurrentQuestionIdx;
             _ = _answerView.UpdateContent(status.QuizCollection.Quizzes[questionIdx]);
-            _object3DContainer.Find("Object").GetComponent<MeshFilter>().sharedMesh = await MeshFromURL.FetchModel(status.QuizCollection.Quizzes[questionIdx].Model);
+            _object3DContainer.Find("Mesh").GetComponent<MeshFilter>().sharedMesh = await MeshFromURL.FetchModel(status.QuizCollection.Quizzes[questionIdx].Model);
         }
 
-        public void OnStart()
+        #region Handle Hub Response
+
+        public async void OnStart()
         {
+            await SetupQuestion();
+
             transform.SetActive(true);
             _loadingContainer.Transform.SetActive(true);
             _answerView.Transform.SetActive(false);
             _scoreView.Transform.SetActive(false);
             _rankView.Transform.SetActive(false);
-
-            _ = SetupQuestion();
         }
 
         public void OnDonePreview()
@@ -217,8 +240,11 @@ namespace Core.View
             _answerView.Transform.SetActive(true);
         }
 
+
         public void OnEndQuestion()
         {
+            _scoreView.UpdateContent();
+
             _answerView.Transform.SetActive(false);
             _scoreView.Transform.SetActive(true);
         }
@@ -226,15 +252,27 @@ namespace Core.View
         public async void OnNextQuestion()
         {
             await SetupQuestion();
+
+            _answerView.Transform.SetActive(false);
             _scoreView.Transform.SetActive(false);
             _loadingContainer.Transform.SetActive(true);
         }
 
         public void OnEndQuiz()
         {
+            _ = _rankView.UpdateContent();
+
+            _answerView.Transform.SetActive(false);
             _scoreView.Transform.SetActive(false);
             _rankView.Transform.SetActive(true);
         }
+
+        public void OnEndSession()
+        {
+            transform.SetActive(false);
+        }
+
+        #endregion Handle Hub Response
 
         public void Refresh()
         {

@@ -48,8 +48,5 @@ namespace Shared.Network
     public class VirtualRoomTickResponse : GeneralResponse
     {
         public PublicUserData User { get; set; }
-        public byte[] Texture { get; set; }
-        public bool IsSharing { get; set; }
-        public bool IsSharingQuizzesGame { get; set; }
     }
 }

@@ -124,8 +124,8 @@ namespace Core.View
             _backBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LoginScreenModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
 
             _loginBtn.OnClicked.AddListener(async () =>
@@ -146,8 +146,8 @@ namespace Core.View
                 _userAuthentication.Update(data);
 
                 _gameStore.GState.RemoveModel<LoginScreenModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
 
             _formSwitchBtn.OnClicked.AddListener(() =>

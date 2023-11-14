@@ -18,6 +18,8 @@ namespace Shared.Network
 
         Task VirtualRoomTickSync(VirtualRoomTickData data);
 
+        Task SharingTickSync(SharingTickData data);
+
         Task Tick(string message = "");
 
         Task CmdToKeepAliveConnection();
@@ -35,6 +37,8 @@ namespace Shared.Network
         void OnUpdateAvatar(PublicUserData user);
 
         void OnRoomTick(VirtualRoomTickResponse response);
+
+        void OnSharingTick(SharingTickData response);
 
         void OnTick(string message);
     }

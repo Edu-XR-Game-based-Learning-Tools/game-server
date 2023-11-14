@@ -123,10 +123,10 @@ namespace RpcService.Hub
         private GeneralResponse ValidateJoinRoom(JoinClassRoomData data)
         {
             if (_storage != null && _storage.AllValues.Count - 1 > data.Amount)
-                return new RoomStatusResponse { Success = false, Password = Defines.FULL_AMOUNT };
+                return new RoomStatusResponse { Success = false, Message = Defines.FULL_AMOUNT };
 
             if (data.Password != data.Password)
-                return new RoomStatusResponse { Success = false, Password = Defines.INVALID_PASSWORD };
+                return new RoomStatusResponse { Success = false, Message = Defines.INVALID_PASSWORD };
 
             return null;
         }
@@ -179,18 +179,22 @@ namespace RpcService.Hub
 
         public async Task LeaveAsync()
         {
-            var joinData = await _redisDataService.GetCacheAsync<JoinClassRoomData>(GetRoomCacheKey(_room.GroupName));
-            if (_self.IsHost)
+            try
             {
-                _roomSet.Remove(_room.GroupName);
-                await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
+                var joinData = await _redisDataService.GetCacheAsync<JoinClassRoomData>(GetRoomCacheKey(_room.GroupName));
+                if (_self.IsHost)
+                {
+                    _roomSet.Remove(_room.GroupName);
+                    await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
+                }
+
+                RoomStatusResponse status = null;
+                if (!_self.IsHost) status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
+                Broadcast(_room).OnLeave(status, _self);
+
+                await _room.RemoveAsync(Context);
             }
-
-            RoomStatusResponse status = null;
-            if (!_self.IsHost) status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
-            Broadcast(_room).OnLeave(status, _self);
-
-            await _room.RemoveAsync(Context);
+            catch { }
         }
 
         public async Task InviteToGame(InviteToGameData data)
@@ -213,6 +217,15 @@ namespace RpcService.Hub
         {
             _self.HeadRotation = data.HeadRotation;
             Broadcast(_room).OnRoomTick(new VirtualRoomTickResponse
+            {
+                User = _self,
+            });
+            return Task.CompletedTask;
+        }
+
+        public Task SharingTickSync(SharingTickData data)
+        {
+            Broadcast(_room).OnSharingTick(new SharingTickData
             {
                 User = _self,
                 Texture = data.Texture,

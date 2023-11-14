@@ -12,6 +12,7 @@ using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using VContainer;
 
@@ -112,8 +113,8 @@ namespace Core.View
             };
 
             _gameStore.GState.RemoveModel<LandingScreenModel>();
-            await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                 "", ViewName.Unity, ModuleName.RoomStatus);
+            (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
+                 moduleName: ModuleName.RoomStatus)).Refresh();
 
             await _virtualRoomPresenter.Spawn();
         }
@@ -197,8 +198,8 @@ namespace Core.View
             _loginBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
-                await _gameStore.GetOrCreateModule<LoginScreen, LoginScreenModel>(
-                    "", ViewName.Unity, ModuleName.LoginScreen);
+                await _gameStore.GetOrCreateModel<LoginScreen, LoginScreenModel>(
+                    moduleName: ModuleName.LoginScreen);
             });
             _userBtn.OnClicked.AddListener(() =>
             {
@@ -228,15 +229,15 @@ namespace Core.View
                 _toolBtns[idx].OnClicked.AddListener(async () =>
                 {
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
-                    await _gameStore.GetOrCreateModule<ToolDescription, ToolDescriptionModel>(
-                        "", ViewName.Unity, ModuleName.ToolDescription);
+                    await _gameStore.GetOrCreateModel<ToolDescription, ToolDescriptionModel>(
+                        moduleName: ModuleName.ToolDescription);
                 });
             }
             for (int idx = 0; idx < _openToolBtns.Length; idx++)
             {
                 _openToolBtns[idx].OnClicked.AddListener(async () =>
                 {
-                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData());
+                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                         return;
@@ -244,8 +245,8 @@ namespace Core.View
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
-                    await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
-                        "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
+                    await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                        moduleName: ModuleName.QuizzesRoomStatus);
                 });
             }
 
@@ -261,8 +262,8 @@ namespace Core.View
             _settingBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
-                await _gameStore.GetOrCreateModule<SettingScreen, SettingScreenModel>(
-                    "", ViewName.Unity, ModuleName.SettingScreen);
+                await _gameStore.GetOrCreateModel<SettingScreen, SettingScreenModel>(
+                    moduleName: ModuleName.SettingScreen);
             });
         }
 
@@ -278,9 +279,10 @@ namespace Core.View
         {
             bool isInRoomView = _userDataController.ServerData.IsInRoom;
             bool isInGameView = _userDataController.ServerData.IsInGame;
-            _roomInputField.SetActive(!isInGameView);
-            _joinBtn.SetActive(!isInGameView);
-            _createBtn.SetActive(!isInGameView);
+            _roomInputField.SetActive(!isInRoomView || !isInGameView);
+            _joinBtn.SetActive(!isInRoomView || !isInGameView);
+            _joinBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = !isInRoomView ? "Join" : "Join Quizzes";
+            _createBtn.SetActive(!isInRoomView);
             _userDropdown.GetChild((int)LandingScreenUserDropdownActionType.Logout).SetActive(!isInGameView);
             foreach (var btn in _openToolBtns)
                 btn.SetActive(isInRoomView && !isInGameView);

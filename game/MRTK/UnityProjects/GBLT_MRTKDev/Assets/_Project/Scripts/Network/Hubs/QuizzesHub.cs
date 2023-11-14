@@ -2,6 +2,7 @@
 using Core.Network;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
+using Shared.Extension;
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -44,6 +45,7 @@ namespace Shared.Network
 
         public async Task<QuizzesStatusResponse> JoinAsync(JoinQuizzesData data, bool requiredAuthentication = false)
         {
+            data.UserData = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
             _client = await _gRpcHubClient.Subscribe<IQuizzesHub, IQuizzesHubReceiver>(this, requiredAuthentication: requiredAuthentication);
             _stayAliveHelper = new HubStayAliveHelper(() => _client.CmdToKeepAliveConnection().AsUniTask());
             QuizzesStatusResponse response;
@@ -95,9 +97,9 @@ namespace Shared.Network
             return _client.NextQuestion();
         }
 
-        public Task EndQuiz()
+        public Task EndSession()
         {
-            return _client.EndQuiz();
+            return _client.EndSession();
         }
 
         // Player
@@ -123,27 +125,46 @@ namespace Shared.Network
 
         #region Receivers of message from server.
 
+        private void UpdateStatusExceptSelf(QuizzesStatusResponse status)
+        {
+            QuizzesUserData self = null;
+            if (_userDataController.ServerData.RoomStatus.InGameStatus != null)
+                self = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
+
+            _userDataController.ServerData.RoomStatus.InGameStatus = status;
+            _userDataController.ServerData.RoomStatus.InGameStatus.Self = self ?? status.Self;
+        }
+
         public void OnJoin(QuizzesStatusResponse status, QuizzesUserData user)
         {
-            _userDataController.ServerData.RoomStatus.InGameStatus = status;
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnJoinQuizzes(user);
         }
 
         public void OnLeave(QuizzesStatusResponse status, QuizzesUserData user)
         {
-            _userDataController.ServerData.RoomStatus.InGameStatus = status;
             _virtualRoomPresenter.OnLeaveQuizzes(user);
+            QuizzesUserData self = null;
+            if (_userDataController.ServerData.RoomStatus.InGameStatus != null)
+                self = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
+            bool isYou = _userDataController.ServerData.RoomStatus.InGameStatus.Self.Index == user.Index;
+            _userDataController.ServerData.RoomStatus.InGameStatus = isYou ? null : status;
+            if (!isYou) _userDataController.ServerData.RoomStatus.InGameStatus.Self = self ?? status.Self;
         }
+
+        #region Only Host
 
         public void OnAnswer(AnswerData data)
         {
             _virtualRoomPresenter.OnAnswerQuizzes(data);
         }
 
+        #endregion Only Host
+
         public void OnStart(QuizzesStatusResponse status)
         {
-            _userDataController.ServerData.RoomStatus.InGameStatus = status;
-            _virtualRoomPresenter.OnStartQuizzes(status);
+            UpdateStatusExceptSelf(status);
+            _virtualRoomPresenter.OnStartQuizzes();
         }
 
         public void OnDonePreview()
@@ -151,20 +172,27 @@ namespace Shared.Network
             _virtualRoomPresenter.OnDonePreviewQuizzes();
         }
 
-        public void OnEndQuestion()
+        public void OnEndQuestion(QuizzesStatusResponse status)
         {
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnEndQuestionQuizzes();
         }
 
         public void OnNextQuestion(QuizzesStatusResponse status)
         {
-            _userDataController.ServerData.RoomStatus.InGameStatus = status;
-            _virtualRoomPresenter.OnNextQuestionQuizzes(status);
+            UpdateStatusExceptSelf(status);
+            _virtualRoomPresenter.OnNextQuestionQuizzes();
         }
 
-        public void OnEndQuiz()
+        public void OnEndQuiz(QuizzesStatusResponse status)
         {
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnEndQuizQuizzes();
+        }
+
+        public void OnEndSession()
+        {
+            _virtualRoomPresenter.OnEndSessionQuizzes();
         }
 
         #endregion Receivers of message from server.

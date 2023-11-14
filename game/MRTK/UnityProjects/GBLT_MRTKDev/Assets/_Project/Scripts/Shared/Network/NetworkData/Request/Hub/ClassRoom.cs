@@ -19,6 +19,13 @@ namespace Shared.Network
     public class VirtualRoomTickData
     {
         public Vec3D HeadRotation { get; set; }
+    }
+
+    [System.Serializable]
+    [MessagePackObject(true)]
+    public class SharingTickData
+    {
+        public PublicUserData User { get; set; }
         public byte[] Texture { get; set; }
         public bool IsSharing { get; set; }
         public bool IsSharingQuizzesGame { get; set; }

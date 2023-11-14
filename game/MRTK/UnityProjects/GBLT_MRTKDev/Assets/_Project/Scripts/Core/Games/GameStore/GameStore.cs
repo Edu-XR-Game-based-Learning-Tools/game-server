@@ -154,7 +154,7 @@ namespace Core.Framework
             }
         }
 
-        public async UniTask<TClass> GetOrCreateModule<TClass, TModel>(
+        public async UniTask<TModel> GetOrCreateModel<TClass, TModel>(
             string viewId = "",
             ViewName viewName = ViewName.Unity,
             ModuleName moduleName = ModuleName.SplashScreen)
@@ -165,15 +165,15 @@ namespace Core.Framework
             if (GState.HasModel<TModel>())
             {
                 //_logger.Warning($"Dupplicate Found on Module: {typeof(TClass).ToString()}");
-                return (TClass)GState.GetModel<TModel>().Module;
+                return GState.GetModel<TModel>();
             }
             if (viewName == ViewName.Unity) viewId = moduleName.ToString() + "Script";
             TClass module = await CreateModuleInner<TClass, TModel>(moduleName);
-            CreateModel<TClass, TModel>(module);
+            var model = CreateModel<TClass, TModel>(module);
             BaseViewContext.Factory viewContextFactory = _container.Resolve<BaseViewContext.Factory>();
             IViewContext viewContext = viewContextFactory.Create(viewId, viewName);
             await module.CreateView(viewId, moduleName, viewContext);
-            return module;
+            return model;
         }
 
         private async UniTask<TClass> CreateModuleInner<TClass, TModel>(ModuleName moduleName)
@@ -186,12 +186,13 @@ namespace Core.Framework
             return instance;
         }
 
-        private void CreateModel<TClass, TModel>(TClass module)
+        private TModel CreateModel<TClass, TModel>(TClass module)
             where TClass : IBaseModule
             where TModel : IModuleContextModel, new()
         {
             TModel model = GState.CreateNewModel<TModel>();
             model.Module = module;
+            return model;
         }
 
         public void RemoveAllModules()
@@ -258,10 +259,10 @@ namespace Core.Framework
                 if (model.Module.ModuleName == LastHiddenModule && !model.Module.ViewContext.View.activeInHierarchy)
                 {
                     GState.RemoveModel(model);
+                    LastHiddenModule = null;
                     break;
                 }
             }
-            LastHiddenModule = null;
         }
 
         private IModuleContextModel GetRecentModule()

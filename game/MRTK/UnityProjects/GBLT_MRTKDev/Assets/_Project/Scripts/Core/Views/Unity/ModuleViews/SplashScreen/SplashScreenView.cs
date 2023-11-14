@@ -31,8 +31,8 @@ namespace Core.View
             _startBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<SplashScreenModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
         }
 

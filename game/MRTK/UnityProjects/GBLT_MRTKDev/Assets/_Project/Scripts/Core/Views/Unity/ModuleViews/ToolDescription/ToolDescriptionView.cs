@@ -64,13 +64,13 @@ namespace Core.View
             _backBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<ToolDescriptionModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
 
             _openBtn.OnClicked.AddListener(async () =>
             {
-                QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData());
+                QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
                 await _classRoomHub.InviteToGame(response);
 
                 if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
@@ -79,8 +79,8 @@ namespace Core.View
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
-                await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
-                    "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
+                await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                    moduleName: ModuleName.QuizzesRoomStatus);
             });
         }
 

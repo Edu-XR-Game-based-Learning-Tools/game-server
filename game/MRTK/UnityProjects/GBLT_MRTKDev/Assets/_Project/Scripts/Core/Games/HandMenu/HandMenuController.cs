@@ -54,20 +54,20 @@ namespace Core.View
             _landingPageBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.RemoveCurrentModel();
-                (await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen)).Model.Refresh();
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
             _roomStatusBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.RemoveCurrentModel();
-                (await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                    "", ViewName.Unity, ModuleName.RoomStatus)).Model.Refresh();
+                (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
+                    moduleName: ModuleName.RoomStatus)).Refresh();
             });
             _gameStatusBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.RemoveCurrentModel();
-                (await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
-                    "", ViewName.Unity, ModuleName.QuizzesRoomStatus)).Model.Refresh();
+                (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                    moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
             });
             _openLastScreenBtn.OnClicked.AddListener(() =>
             {

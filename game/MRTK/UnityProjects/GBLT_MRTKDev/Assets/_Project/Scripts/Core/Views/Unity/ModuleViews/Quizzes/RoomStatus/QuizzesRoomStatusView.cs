@@ -11,6 +11,7 @@ using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
@@ -32,26 +33,24 @@ namespace Core.View
         [System.Serializable]
         public class SelectQuizView : SubView
         {
-            [SerializeField][DebugOnly] protected PressableButton[] _quizBtns;
+            [SerializeField][DebugOnly] protected List<PressableButton> _quizBtns = new();
             [SerializeField][DebugOnly] protected QuizzesRoomStatusView _root;
 
             public SelectQuizView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
                 _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
 
-                _quizBtns = new PressableButton[] {
-                    Transform.Find("Content/Scroll View/Viewport/Content").GetChild(0).GetComponent<PressableButton>()
-                };
-
-                RegisterEvents();
+                _quizBtns.Add(
+                    Transform.Find("Content/Scroll View/Viewport/Content").GetChild(0).GetComponent<PressableButton>());
             }
 
             public async UniTask SetupQuizzes(QuizCollectionDto[] collections, QuizzesRoomStatusView root)
             {
+                _root = root;
                 for (int idx = 0; idx < collections.Length; idx++)
                 {
                     if (idx >= _quizBtns[0].transform.parent.childCount)
-                        Instantiate(_quizBtns[0], _quizBtns[0].transform.parent);
+                        _quizBtns.Add(Instantiate(_quizBtns[0], _quizBtns[0].transform.parent));
 
                     var record = _quizBtns[idx];
                     record.transform.Find("Frontplate/AnimatedContent/Header/Content/Title").GetComponent<TextMeshProUGUI>().text = collections[idx].Name;
@@ -61,17 +60,22 @@ namespace Core.View
                         record.transform.Find("Frontplate/AnimatedContent/Image").GetComponent<Image>().sprite = !collections[idx].Quizzes.First().ThumbNail.IsNullOrEmpty() ? await IMG2Sprite.FetchImageSprite(collections[idx].Quizzes.First().ThumbNail) : await IMG2Sprite.FetchImageSprite(collections[idx].Quizzes.First().Image);
                     }
                 }
+
+                RegisterEvents();
             }
 
             public override void RegisterEvents()
             {
                 base.RegisterEvents();
 
-                for (int idx = 0; idx < _quizBtns.Length; idx++)
+                for (int idx = 0; idx < _quizBtns.Count; idx++)
                 {
+                    int index = idx;
                     _quizBtns[idx].OnClicked.AddListener(() =>
                     {
-                        _root.OnQuizSelect(idx);
+                        _root.OnQuizCollectionSelect(index);
+                        _onBack?.Invoke();
+                        Transform.SetActive(false);
                     });
                 }
             }
@@ -100,6 +104,7 @@ namespace Core.View
         [SerializeField][DebugOnly] private QuizCollectionDto[] _collections;
         [SerializeField][DebugOnly] private QuizCollectionDto _selectedCollection;
 
+        [DebugOnly] public Transform RootContent;
         [SerializeField][DebugOnly] private SelectQuizView _selectQuizView;
 
         [Inject]
@@ -117,21 +122,21 @@ namespace Core.View
 
         private void GetReferences()
         {
-            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/Close_Btn").GetComponent<PressableButton>();
-            _quitBtn = transform.Find("CanvasDialog/Canvas/Header/Quit_Btn").GetComponent<PressableButton>();
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Close_Btn").GetComponent<PressableButton>();
+            _quitBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Quit_Btn").GetComponent<PressableButton>();
 
-            _startBtn = transform.Find("CanvasDialog/Canvas/Header/Start_Btn").GetComponent<PressableButton>();
-            _titleTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Title").GetComponent<TextMeshProUGUI>();
-            _amountTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
+            _startBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Start_Btn").GetComponent<PressableButton>();
+            _titleTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Title").GetComponent<TextMeshProUGUI>();
+            _amountTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
 
-            var hostTransform = transform.Find("");
+            var hostTransform = transform.Find("CanvasDialog/Canvas/Content/Content/Person");
             _hostItem = new RoomStatusPerson
             {
                 Button = hostTransform.GetComponent<PressableButton>(),
                 NameTxt = hostTransform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>(),
                 IconImg = hostTransform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>(),
             };
-            var list = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
+            var list = transform.Find("CanvasDialog/Canvas/Content/Content/Scroll View/Viewport/Content");
             _personItems = new bool[list.childCount].Select((_, idx) =>
             {
                 Transform person = list.GetChild(idx);
@@ -143,17 +148,27 @@ namespace Core.View
                 };
             }).ToArray();
 
-            _selectQuizBtn = transform.Find("CanvasDialog/Canvas/Footer/SelectQuiz_Btn").GetComponent<PressableButton>();
-            _quizNameTxt = transform.Find("CanvasDialog/Canvas/Footer/SelectQuiz_Btn").GetComponent<TextMeshProUGUI>();
+            _selectQuizBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/SelectQuiz_Btn").GetComponent<PressableButton>();
+            _quizNameTxt = transform.Find("CanvasDialog/Canvas/Content/Footer/QuizName_Txt").GetComponent<TextMeshProUGUI>();
 
-            _selectQuizView = new SelectQuizView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform);
+            RootContent = transform.Find("CanvasDialog/Canvas/Content");
+            _selectQuizView = new SelectQuizView(transform.Find("CanvasDialog/Canvas/QuizSelection"), _container, transform, OnBack);
 
             _selectQuizView.Transform.SetActive(false);
             _quizNameTxt.text = "";
         }
 
+        private void OnBack()
+        {
+            RootContent.SetActive(true);
+        }
+
         private void RegisterEvents()
         {
+            _closeBtn.OnClicked.AddListener(() =>
+            {
+                _gameStore.HideCurrentModule(ModuleName.QuizzesRoomStatus);
+            });
             _quitBtn.OnClicked.AddListener(() =>
             {
                 _showPopupPublisher.Publish(new ShowPopupSignal(title: "Are you sure you want to quit the game?", yesContent: "Yes", noContent: "No", yesAction: async (value1, value2) =>
@@ -162,8 +177,8 @@ namespace Core.View
                     await _quizzesHub.LeaveAsync();
 
                     _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
-                    await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                        "", ViewName.Unity, ModuleName.LandingScreen);
+                    (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
+                        moduleName: ModuleName.RoomStatus)).Refresh();
 
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 }, noAction: (_, _) => { }));
@@ -171,47 +186,50 @@ namespace Core.View
 
             _startBtn.OnClicked.AddListener(async () =>
             {
-                await _virtualRoomPresenter.StartGame(_selectedCollection);
-                _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
+                await _quizzesHub.StartGame(_selectedCollection);
+                _gameStore.HideCurrentModule(ModuleName.QuizzesRoomStatus);
             });
 
-            for (int idx = 0; idx < _personItems.Length; idx++)
+            _selectQuizBtn.OnClicked.AddListener(async () =>
             {
-                int index = idx;
-                _personItems[index].Button.OnClicked.AddListener(() =>
-                {
-                    Debug.Log($"{_personItems[index].NameTxt.text} - {index}");
-                });
-            }
-
-            _selectQuizBtn.OnClicked.AddListener(() =>
-                _selectQuizView.Transform.SetActive(true));
+                await FetchCollections();
+                if (_collections.Length == 0) return;
+                RootContent.SetActive(false);
+                _selectQuizView.Transform.SetActive(true);
+            });
         }
 
-        public void OnQuizSelect(int index)
+        public void OnQuizCollectionSelect(int index)
         {
-            _quizNameTxt.text = _collections[index].Name;
+            if (index >= _collections.Length) return;
+            _selectedCollection = _collections[index];
+            _quizNameTxt.text = _selectedCollection.Name;
         }
 
         public async Task FetchCollections()
         {
             _collections = (await _quizzesHub.GetCollections()).Collections;
+            UpdateStartBtn();
+            if (_collections.Length == 0)
+                return;
             _ = _selectQuizView.SetupQuizzes(_collections, this);
+            if (_selectedCollection == null) OnQuizCollectionSelect(0);
         }
 
-        public override async void OnReady()
+        public override void OnReady()
         {
             GetReferences();
             RegisterEvents();
-
-            await FetchCollections();
 
             Refresh();
         }
 
         public async UniTask UpdateCharacter(PublicUserData userData, bool isShow = true)
         {
-            _personItems[userData.Index].Button.SetActive(isShow);
+            if (userData.IsHost)
+                _hostItem.Button.SetActive(isShow);
+            else
+                _personItems[userData.Index].Button.SetActive(isShow);
             if (!isShow) return;
 
             var avt = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(userData.AvatarPath);
@@ -226,9 +244,16 @@ namespace Core.View
             _personItems[userData.Index].IconImg.sprite = avt;
         }
 
-        public void Refresh()
+        private void UpdateStartBtn()
         {
-            if (!_userDataController.ServerData.IsInRoom)
+            bool isInGame = _userDataController.ServerData.IsInGame;
+            bool isHost = _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost;
+            _startBtn.SetActive(isHost && isInGame && _collections.Length > 0);
+        }
+
+        public async void Refresh()
+        {
+            if (!_userDataController.ServerData.IsInRoom || !_userDataController.ServerData.IsInGame)
             {
                 _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
                 return;
@@ -237,24 +262,16 @@ namespace Core.View
             bool isInGame = _userDataController.ServerData.IsInGame;
             var status = _userDataController.ServerData.RoomStatus.InGameStatus;
 
-            string idPrefix = isInGame ? "PIN" : "Room Id";
+            string idPrefix = "PIN";
             _titleTxt.SetText($"{idPrefix}: {status.Id}");
             _amountTxt.SetText($"Amount: {status.Amount}");
             for (int idx = 0; idx < _personItems.Length; idx++)
-            {
-                _personItems[idx].Button.SetActive(idx >= status.Others.Length);
-                if (idx >= status.Others.Length) continue;
+                _personItems[idx].Button.SetActive(false);
+            for (int idx = 0; idx < status.AllInRoom.Length; idx++)
+                await UpdateCharacter(status.AllInRoom[idx].UserData);
 
-                if (status.Others[idx].IsHost)
-                {
-                    idx--;
-                    continue;
-                }
-
-                _personItems[idx].NameTxt.text = status.Others[idx].UserData.Name;
-            }
             bool isHost = _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost;
-            _startBtn.SetActive(isHost && isInGame && _collections.Length > 0);
+            UpdateStartBtn();
             _selectedCollection = _collections.Length > 0 ? _collections[0] : null;
             _selectQuizBtn.SetActive(isHost && isInGame);
         }

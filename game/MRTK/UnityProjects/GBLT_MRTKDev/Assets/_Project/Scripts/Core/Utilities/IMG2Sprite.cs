@@ -19,35 +19,42 @@ namespace Core.Utility
 
         public static async UniTask<Texture2D> FetchImageTexture(string uri, float pixelsPerUnit = 100.0f, SpriteMeshType spriteType = SpriteMeshType.Tight)
         {
-            const int kMaxRetries = 3;
-
-            for (int retries = 0; retries < kMaxRetries; retries++)
+            try
             {
-                using UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture(uri);
-                await webRequest.SendWebRequest();
+                const int kMaxRetries = 3;
+
+                for (int retries = 0; retries < kMaxRetries; retries++)
+                {
+                    using UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture(uri);
+                    await webRequest.SendWebRequest();
 
 #if UNITY_2020_2_OR_NEWER
-                if (webRequest.result == UnityWebRequest.Result.ProtocolError || webRequest.result == UnityWebRequest.Result.ConnectionError)
+                    if (webRequest.result == UnityWebRequest.Result.ProtocolError || webRequest.result == UnityWebRequest.Result.ConnectionError)
 #else
                     if (webRequest.isHttpError || webRequest.isNetworkError)
 #endif
-                {
-                    Debug.LogError("SendWebRequest error: " + webRequest.error + " for URL " + uri);
-                }
-                else
-                {
+                    {
+                        Debug.LogError("SendWebRequest error: " + webRequest.error + " for URL " + uri);
+                    }
+                    else
+                    {
 #if UNITY_2019_1_OR_NEWER
-                    bool saveAllowThreaded = Texture.allowThreadedTextureCreation;
-                    Texture.allowThreadedTextureCreation = true;
+                        bool saveAllowThreaded = Texture.allowThreadedTextureCreation;
+                        Texture.allowThreadedTextureCreation = true;
 #endif
-                    Texture2D tex = DownloadHandlerTexture.GetContent(webRequest);
+                        Texture2D tex = DownloadHandlerTexture.GetContent(webRequest);
 
 #if UNITY_2019_1_OR_NEWER
-                    Texture.allowThreadedTextureCreation = saveAllowThreaded;
+                        Texture.allowThreadedTextureCreation = saveAllowThreaded;
 #endif
 
-                    return tex;
+                        return tex;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log($"{ex}");
             }
             return null;
         }
@@ -97,39 +104,48 @@ namespace Core.Utility
 
         public static async UniTask<UnityEngine.Mesh> FetchModel(string url)
         {
-            using UnityWebRequest webRequest = UnityWebRequest.Get(url);
-            await webRequest.SendWebRequest();
+            try
+            {
+                using UnityWebRequest webRequest = UnityWebRequest.Get(url);
+                await webRequest.SendWebRequest();
 
 #if UNITY_2020_2_OR_NEWER
-            if (webRequest.result == UnityWebRequest.Result.ProtocolError || webRequest.result == UnityWebRequest.Result.ConnectionError)
+                if (webRequest.result == UnityWebRequest.Result.ProtocolError || webRequest.result == UnityWebRequest.Result.ConnectionError)
 #else
                     if (webRequest.isHttpError || webRequest.isNetworkError)
 #endif
-            {
-                Debug.LogError("SendWebRequest error: " + webRequest.error + " for URL " + url);
-            }
-            else
-            {
-                byte[] results = webRequest.downloadHandler.data;
-                using MemoryStream stream = new(results);
-                Scene scene = _importer.ImportFileFromStream(stream);
-
-                if (scene.Meshes.Count > 0)
                 {
-                    Assimp.Mesh assimpMesh = scene.Meshes.First();
-                    UnityEngine.Mesh mesh = new()
-                    {
-                        vertices = assimpMesh.Vertices.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
-                        triangles = assimpMesh.Faces.SelectMany(ele => ele.Indices).ToArray(),
-                        normals = assimpMesh.Normals.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
-                    };
-                    if (assimpMesh.TextureCoordinateChannels.Length > 0)
-                        mesh.uv = assimpMesh.TextureCoordinateChannels[0].Select(ele => new Vector2(ele.X, ele.Y)).ToArray();
-                    if (assimpMesh.VertexColorChannels.Length > 0)
-                        mesh.colors = assimpMesh.VertexColorChannels[0].Select(ele => new Color(ele.R, ele.G, ele.B, ele.A)).ToArray();
-
-                    return mesh;
+                    Debug.LogError("SendWebRequest error: " + webRequest.error + " for URL " + url);
                 }
+                else
+                {
+                    string split = url.Split("?alt=")[0];
+                    string ext = split[^3..];
+                    string savePath = $"{Application.temporaryCachePath}/temp_model.{ext}";
+                    System.IO.File.WriteAllText(savePath, webRequest.downloadHandler.text);
+                    Scene scene = _importer.ImportFile(savePath);
+
+                    if (scene.Meshes.Count > 0)
+                    {
+                        Assimp.Mesh assimpMesh = scene.Meshes.First();
+                        UnityEngine.Mesh mesh = new()
+                        {
+                            vertices = assimpMesh.Vertices.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
+                            triangles = assimpMesh.Faces.SelectMany(ele => ele.Indices).ToArray(),
+                            normals = assimpMesh.Normals.Select(ele => new Vector3(ele.X, ele.Y, ele.Z)).ToArray(),
+                        };
+                        if (assimpMesh.TextureCoordinateChannels.Length > 0)
+                            mesh.uv = assimpMesh.TextureCoordinateChannels[0].Select(ele => new Vector2(ele.X, ele.Y)).ToArray();
+                        if (assimpMesh.VertexColorChannels.Length > 0)
+                            mesh.colors = assimpMesh.VertexColorChannels[0].Select(ele => new Color(ele.R, ele.G, ele.B, ele.A)).ToArray();
+
+                        return mesh;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log($"{ex}");
             }
             return null;
         }

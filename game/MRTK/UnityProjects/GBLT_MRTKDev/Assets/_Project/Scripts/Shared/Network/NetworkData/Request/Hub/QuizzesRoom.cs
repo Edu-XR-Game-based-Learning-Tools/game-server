@@ -21,7 +21,7 @@ namespace Shared.Network
         public PrivateUserData UserData { get; set; }
         public string RoomId { get; set; }
         public QuizzesStatus QuizzesStatus { get; set; } = QuizzesStatus.Pending;
-        public int? CurrentQuestionIdx { get; set; }
+        public int CurrentQuestionIdx { get; set; }
     }
 
     [System.Serializable]

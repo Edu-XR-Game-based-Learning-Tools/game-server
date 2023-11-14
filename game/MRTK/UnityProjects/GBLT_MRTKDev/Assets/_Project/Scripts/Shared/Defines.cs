@@ -13,13 +13,15 @@ namespace Shared
                 "\nCannot start with number." +
                 "\nNo space allowed.";
 
-        public static string INVALID_SESSION = "Your session is invalid. Please sign in again.";
-        public static string INVALID_PASSWORD = "Invalid Password!";
+        public const string INVALID_SESSION = "Your session is invalid. Please sign in again.";
+        public const string INVALID_PASSWORD = "Invalid Password!";
+        public const string QUIZZES_NOT_TEACHER_CREATE = "You are not teacher. Can't create quizzes game session.";
+        public const string QUIZZES_UNAVAILABLE = "Unavailable Quizzes Game!";
 
         // Room
-        public static string INVALID_AMOUNT = "The capacity should be between 24 and 48.";
+        public const string INVALID_AMOUNT = "The capacity should be between 24 and 48.";
 
-        public static string FULL_AMOUNT = "The room is FULL!";
+        public const string FULL_AMOUNT = "The room is FULL!";
 
         public static class PrefabKey
         {

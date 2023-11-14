@@ -1,5 +1,8 @@
 using Shared.Network;
+using System;
 using UnityEngine;
+using UnityEngine.UI;
+using static Microsoft.MixedReality.Toolkit.UX.NonNativeFunctionKey;
 
 namespace Core.Extension
 {
@@ -49,6 +52,23 @@ namespace Core.Extension
 
             RenderTexture.active = old_rt;
             return tex;
+        }
+
+        public static void ScrollToThisItem(this RectTransform target, ScrollRect scrollRect, RectTransform contentPanel)
+        {
+            Canvas.ForceUpdateCanvases();
+
+            contentPanel.anchoredPosition =
+                    (Vector2)scrollRect.transform.InverseTransformPoint(contentPanel.position)
+                    - (Vector2)scrollRect.transform.InverseTransformPoint(target.position);
+        }
+
+        public static void ChangeLayersRecursively(this Transform transform, string layerName)
+        {
+            transform.gameObject.layer = LayerMask.NameToLayer(layerName);
+
+            foreach (Transform child in transform)
+                ChangeLayersRecursively(child, layerName);
         }
     }
 }

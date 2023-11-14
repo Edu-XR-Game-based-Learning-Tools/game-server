@@ -11,7 +11,6 @@ namespace RpcService.Hub
     {
         private IGroup _room;
 
-        private QuizzesStatusResponse _gStatus;
         private QuizzesUserData _self;
         private IInMemoryStorage<QuizzesUserData> _storage;
         private IQuizService _quizService;
@@ -32,13 +31,34 @@ namespace RpcService.Hub
             return $"Quizzes/{roomId}";
         }
 
+        private async Task<QuizzesStatusResponse> GetGameStatus(string roomId = null)
+        {
+            var quizzesStatus = await _redisDataService.GetCacheAsync<QuizzesStatusResponse>(GetRoomCacheKey(roomId ?? _room.GroupName));
+            return quizzesStatus;
+        }
+
+        private async Task SaveGameStatus(QuizzesStatusResponse gStatus)
+        {
+            await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(_room.GroupName), gStatus);
+        }
+
         #region Join Room
 
-        private async Task<GeneralResponse> ValidateCreateRoom(JoinQuizzesData _)
+        private async Task<GeneralResponse> ValidateCreateRoom(JoinQuizzesData data)
         {
             var user = await GetUserIdentity();
             if (user == null)
                 return new QuizzesStatusResponse { Success = false, Message = Defines.INVALID_SESSION };
+            if (!data.UserData.IsHost)
+                return new QuizzesStatusResponse { Success = false, Message = Defines.QUIZZES_NOT_TEACHER_CREATE };
+
+            return null;
+        }
+
+        private static GeneralResponse ValidateJoinRoom(JoinQuizzesData data)
+        {
+            if (data.QuizzesStatus != QuizzesStatus.Pending)
+                return new QuizzesStatusResponse { Success = false, Message = Defines.QUIZZES_UNAVAILABLE };
 
             return null;
         }
@@ -57,37 +77,51 @@ namespace RpcService.Hub
                 validateMsg = (QuizzesStatusResponse)await ValidateCreateRoom(data);
                 if (validateMsg != null) return validateMsg;
 
-                string roomId = GenerateRoomId();
-                _roomSet.Add(roomId);
-                await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(roomId), data);
+                data.RoomId = GenerateRoomId();
+                _roomSet.Add(data.RoomId);
                 isHost = true;
+            }
+
+            QuizzesStatusResponse quizzesStatus = await GetGameStatus(data.RoomId);
+            if (quizzesStatus != null)
+            {
+                validateMsg = (QuizzesStatusResponse)ValidateJoinRoom(quizzesStatus.JoinQuizzesData);
+                if (validateMsg != null) return validateMsg;
             }
 
             (_room, _storage) = await Group.AddAsync(data.RoomId, _self);
             _self.Index = isHost ? -1 : _storage.AllValues.Count - 1; // -1 for not count teacher, teacher seat: index = -1
 
-            QuizzesStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinQuizzesData = data };
-            if (_gStatus.JoinQuizzesData.QuizzesStatus == QuizzesStatus.Pending) _gStatus = status;
+            QuizzesStatusResponse newGameData = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinQuizzesData = data };
+            await SaveGameStatus(newGameData);
 
-            BroadcastExceptSelf(_room).OnJoin(status, _self);
-            return status;
+            BroadcastExceptSelf(_room).OnJoin(newGameData, _self);
+            return await GetGameStatus();
         }
 
         #endregion Join Room
 
         public async Task LeaveAsync()
         {
-            if (_self.IsHost)
+            try
             {
-                _roomSet.Remove(_room.GroupName);
-                await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
-            }
-            await _room.RemoveAsync(Context);
+                QuizzesStatusResponse status = null;
+                if (_self.IsHost)
+                {
+                    _roomSet.Remove(_room.GroupName);
+                    await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
+                }
+                else
+                {
+                    var gStatus = await GetGameStatus();
+                    gStatus.AllInRoom.RemoveWhere(ele => ele.QuizzesConnectionId == ConnectionId);
+                    await SaveGameStatus(gStatus);
+                }
+                Broadcast(_room).OnLeave(status, _self);
 
-            QuizzesStatusResponse status = null;
-            if (!_self.IsHost)
-                status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName };
-            Broadcast(_room).OnLeave(status, _self);
+                await _room.RemoveAsync(Context);
+            }
+            catch { }
         }
 
         #region Host API
@@ -95,53 +129,98 @@ namespace RpcService.Hub
         public async Task<QuizCollectionListDto> GetCollections()
         {
             var user = await GetUserIdentity();
+            if (user == null) return null;
             QuizCollectionListDto quizCollectionListDto = await _quizService.GetQuizCollectionList(user.IdentityId);
             return quizCollectionListDto;
         }
 
-        public Task StartGame(QuizCollectionDto data)
+        public async Task StartGame(QuizCollectionDto data)
         {
-            _gStatus.JoinQuizzesData.CurrentQuestionIdx = 0;
-            _gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.InProgress;
-            _gStatus.QuizCollection = data;
-            BroadcastExceptSelf(_room).OnStart(_gStatus);
-            return Task.CompletedTask;
+            // Debug Only: Duration
+            foreach (var quiz in data.Quizzes) quiz.Duration = 10;
+
+            var gStatus = await GetGameStatus();
+            gStatus.JoinQuizzesData.CurrentQuestionIdx = 0;
+            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.InProgress;
+            gStatus.QuizCollection = data;
+            await SaveGameStatus(gStatus);
+
+            Broadcast(_room).OnStart(gStatus);
         }
 
         public Task DonePreview()
         {
-            BroadcastExceptSelf(_room).OnDonePreview();
+            Broadcast(_room).OnDonePreview();
             return Task.CompletedTask;
         }
 
-        public Task EndQuestion()
+        private int _minScoreEachQuestion = 300;
+        private int _maxScoreEachQuestion = 1000;
+
+        private void CalculateScoreThisQuestion(QuizzesStatusResponse gStatus)
         {
-            BroadcastExceptSelf(_room).OnEndQuestion();
-            return Task.CompletedTask;
+            var students = gStatus.Students;
+            foreach (var student in students)
+            {
+                if (student.AnswerIdx == null) continue;
+
+                QuizDto quiz = gStatus.QuizCollection.Quizzes[gStatus.JoinQuizzesData.CurrentQuestionIdx];
+                if (quiz.CorrectIdx != student.AnswerIdx) continue;
+
+                student.Score += Math.Clamp(student.AnswerMilliTimeFromStart / (quiz.Duration * 1000f), _minScoreEachQuestion, _maxScoreEachQuestion);
+            }
+
+            var rankOrder = students
+                .OrderByDescending(ele => ele.Score)
+                .Select((ele, idx) => (ele, idx))
+                .ToDictionary(ele => ele.ele.QuizzesConnectionId, ele => ele);
+            foreach (var student in students)
+                student.Rank = rankOrder[student.QuizzesConnectionId].idx + 1;
         }
 
-        public Task NextQuestion()
+        public async Task EndQuestion()
         {
-            _gStatus.JoinQuizzesData.CurrentQuestionIdx++;
-            BroadcastExceptSelf(_room).OnNextQuestion(_gStatus);
-            return Task.CompletedTask;
+            var gStatus = await GetGameStatus();
+            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.End;
+            CalculateScoreThisQuestion(gStatus);
+            await SaveGameStatus(gStatus);
+
+            Broadcast(_room).OnEndQuestion(gStatus);
         }
 
-        public Task EndQuiz()
+        public async Task NextQuestion()
         {
-            BroadcastExceptSelf(_room).OnEndQuiz();
-            return Task.CompletedTask;
+            var gStatus = await GetGameStatus();
+            gStatus.JoinQuizzesData.CurrentQuestionIdx++;
+            await SaveGameStatus(gStatus);
+
+            if (gStatus.JoinQuizzesData.CurrentQuestionIdx == gStatus.QuizCollection.Quizzes.Length)
+                Broadcast(_room).OnEndQuiz(gStatus);
+            else
+                Broadcast(_room).OnNextQuestion(gStatus);
+        }
+
+        public async Task EndSession()
+        {
+            var gStatus = await GetGameStatus();
+            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.Pending;
+            await SaveGameStatus(gStatus);
+
+            Broadcast(_room).OnEndSession();
         }
 
         #endregion Host API
 
-        public Task Answer(AnswerData data)
+        public async Task Answer(AnswerData data)
         {
-            var host = _storage.AllValues.Where(ele => ele.IsHost).First();
             data.UserData = _self;
-            data.UserData.CorrectIdx = data.AnswerIdx;
+            var gStatus = await GetGameStatus();
+            var host = gStatus.AllInRoom.Where(ele => ele.IsHost).First();
+            QuizzesUserData userData = gStatus.AllInRoom.Where(ele => ele.QuizzesConnectionId == _self.QuizzesConnectionId).First();
+            userData.AnswerIdx = data.AnswerIdx;
+            await SaveGameStatus(gStatus);
+
             BroadcastTo(_room, (Guid)host.QuizzesConnectionId).OnAnswer(data);
-            return Task.CompletedTask;
         }
     }
 }

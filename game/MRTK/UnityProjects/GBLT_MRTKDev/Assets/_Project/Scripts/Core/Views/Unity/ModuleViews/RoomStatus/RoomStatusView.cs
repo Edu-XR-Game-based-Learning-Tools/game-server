@@ -6,6 +6,7 @@ using Core.Module;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
 using Microsoft.MixedReality.Toolkit.UX;
+using Models;
 using Shared;
 using Shared.Extension;
 using Shared.Network;
@@ -62,6 +63,7 @@ namespace Core.View
             private readonly GameStore _gameStore;
             private readonly ClassRoomHub _classRoomHub;
             private readonly QuizzesHub _quizzesHub;
+            private readonly VirtualRoomPresenter _virtualRoomPresenter;
             private readonly IUserDataController _userDataController;
 
             [SerializeField][DebugOnly] protected PressableButton[] _toolBtns;
@@ -71,6 +73,7 @@ namespace Core.View
                 _gameStore = container.Resolve<GameStore>();
                 _classRoomHub = container.Resolve<ClassRoomHub>();
                 _quizzesHub = container.Resolve<QuizzesHub>();
+                _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
                 _userDataController = container.Resolve<IUserDataController>();
 
                 _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
@@ -88,17 +91,18 @@ namespace Core.View
 
                 _toolBtns[0].OnClicked.AddListener(async () =>
                 {
-                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData());
-                    await _classRoomHub.InviteToGame(response);
+                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                         return;
 
+                    await _classRoomHub.InviteToGame(response);
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
+                    _virtualRoomPresenter.OnJoinQuizzes(response.Self);
 
-                    _gameStore.GState.RemoveModel<RoomStatusModel>();
-                    await _gameStore.GetOrCreateModule<QuizzesRoomStatus, QuizzesRoomStatusModel>(
-                        "", ViewName.Unity, ModuleName.QuizzesRoomStatus);
+                    _gameStore.HideCurrentModule(ModuleName.RoomStatus);
+                    (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                        moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
                 });
             }
         }
@@ -111,8 +115,14 @@ namespace Core.View
             private IUserDataController _userDataController;
 
             [SerializeField][DebugOnly] protected MRTKTMPInputField _nameInput;
+
+            [SerializeField][DebugOnly] protected ScrollRect _avatarScrollRect;
+            [SerializeField][DebugOnly] protected RectTransform _avatarContentPanel;
             [SerializeField][DebugOnly] protected PressableButton[] _avatarBtns;
+            [SerializeField][DebugOnly] protected ScrollRect _modelScrollRect;
+            [SerializeField][DebugOnly] protected RectTransform _modelContentPanel;
             [SerializeField][DebugOnly] protected PressableButton[] _modelBtns;
+
             [SerializeField][DebugOnly] protected PressableButton _submitBtn;
 
             public string SelectedAvatarPath => Defines.PrefabKey.AvatarPaths[_selectedAvatarIdx];
@@ -133,29 +143,29 @@ namespace Core.View
 
                 _nameInput = Transform.Find("Content/Form/InputField/InputField (TMP)").GetComponent<MRTKTMPInputField>();
 
-                Transform parent = Transform.Find("Content/Form/Avatar_SV/Viewport/Content");
+                _avatarScrollRect = Transform.Find("Content/Form/Avatar_SV").GetComponent<ScrollRect>();
+                _avatarContentPanel = Transform.Find("Content/Form/Avatar_SV/Viewport/Content").GetComponent<RectTransform>();
                 _avatarBtns = Defines.PrefabKey.AvatarPaths.Select((path, idx) =>
                 {
                     if (idx > 0)
-                        Instantiate(parent.GetChild(0), parent);
-                    parent.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.AvatarPaths[idx]}";
-                    return parent.GetChild(idx).GetComponent<PressableButton>();
+                        Instantiate(_avatarContentPanel.GetChild(0), _avatarContentPanel);
+                    _avatarContentPanel.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.AvatarPaths[idx]}";
+                    return _avatarContentPanel.GetChild(idx).GetComponent<PressableButton>();
                 }).ToArray();
 
-                parent = Transform.Find("Content/Form/Model_SV/Viewport/Content");
+                _modelScrollRect = Transform.Find("Content/Form/Model_SV").GetComponent<ScrollRect>();
+                _modelContentPanel = Transform.Find("Content/Form/Model_SV/Viewport/Content").GetComponent<RectTransform>();
                 _modelBtns = Defines.PrefabKey.ModelThumbnailPaths.Select((path, idx) =>
                 {
                     if (idx > 0)
-                        Instantiate(parent.GetChild(0), parent);
-                    parent.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.ModelThumbnailPaths[idx]}";
-                    return parent.GetChild(idx).GetComponent<PressableButton>();
+                        Instantiate(_modelContentPanel.GetChild(0), _modelContentPanel);
+                    _modelContentPanel.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.ModelThumbnailPaths[idx]}";
+                    return _modelContentPanel.GetChild(idx).GetComponent<PressableButton>();
                 }).ToArray();
 
                 _submitBtn = Transform.Find("Content/Form/Submit_Btn").GetComponent<PressableButton>();
 
-                SetAvatarIcon();
-
-                RegisterEvents();
+                FirstSetupIcon();
             }
 
             private void EnableAvatar(int index)
@@ -172,27 +182,32 @@ namespace Core.View
                 _modelBtns[_selectedModelIdx].transform.Find("Backplate").GetComponent<Image>().color = _selectedColor;
             }
 
-            private async void SetAvatarIcon()
+            private async void FirstSetupIcon()
             {
                 for (int idx = 0; idx < _avatarBtns.Length; idx++)
                 {
                     _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.AvatarPaths[idx]);
-
                     _avatarBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
 
                 for (int idx = 0; idx < _modelBtns.Length; idx++)
                 {
                     _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.ModelThumbnailPaths[idx]);
-
                     _modelBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
 
+                RegisterEvents();
+            }
+
+            public void SetAvatarIcon()
+            {
                 _selectedAvatarIdx = Defines.PrefabKey.AvatarPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.AvatarPath).First().idx;
                 EnableAvatar(_selectedAvatarIdx);
+                _avatarBtns[_selectedAvatarIdx].GetComponent<RectTransform>().ScrollToThisItem(_avatarScrollRect, _avatarContentPanel);
 
                 _selectedModelIdx = Defines.PrefabKey.ModelPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.ModelPath).First().idx;
                 EnableModel(_selectedModelIdx);
+                _modelBtns[_selectedModelIdx].GetComponent<RectTransform>().ScrollToThisItem(_modelScrollRect, _modelContentPanel);
             }
 
             public override void RegisterEvents()
@@ -205,7 +220,6 @@ namespace Core.View
                     _avatarBtns[idx].OnClicked.AddListener(() => EnableAvatar(index));
                 }
 
-                bool test = false;
                 for (int idx = 0; idx < _modelBtns.Length; idx++)
                 {
                     int index = idx;
@@ -338,21 +352,12 @@ namespace Core.View
                     await _classRoomHub.LeaveAsync();
 
                     _gameStore.GState.RemoveModel<RoomStatusModel>();
-                    await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                        "", ViewName.Unity, ModuleName.LandingScreen);
+                    (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                        moduleName: ModuleName.LandingScreen)).Refresh();
 
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 }, noAction: (_, _) => { }));
             });
-
-            for (int idx = 0; idx < _personItems.Length; idx++)
-            {
-                int index = idx;
-                _personItems[index].Button.OnClicked.AddListener(() =>
-                {
-                    Debug.Log($"{_personItems[index].NameTxt.text} - {index}");
-                });
-            }
 
             _selectToolBtn.OnClicked.AddListener(() =>
             {
@@ -363,6 +368,7 @@ namespace Core.View
             {
                 RootContent.SetActive(false);
                 _editAvatarView.Transform.SetActive(true);
+                _editAvatarView.SetAvatarIcon();
             });
             _settingBtn.OnClicked.AddListener(() =>
             {
@@ -410,7 +416,7 @@ namespace Core.View
             bool isInGame = _userDataController.ServerData.IsInGame;
             GeneralRoomStatusResponse status = _userDataController.ServerData.RoomStatus.RoomStatus;
 
-            string idPrefix = isInGame ? "PIN" : "Room Id";
+            string idPrefix = "Room Id";
             _titleTxt.SetText($"{idPrefix}: {status.Id}");
             _amountTxt.SetText($"Amount: {status.Amount}");
             for (int idx = 0; idx < _personItems.Length; idx++)
