@@ -24,6 +24,8 @@ namespace Core.View
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
 
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
+
         [SerializeField][DebugOnly] private PressableButton _backBtn;
         [SerializeField][DebugOnly] private PressableButton[] _tabBtns;
         [SerializeField][DebugOnly] private Transform[] _tabContents;
@@ -41,7 +43,9 @@ namespace Core.View
 
         private void GetReferences()
         {
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/Close_Btn").GetComponent<PressableButton>();
             _backBtn = transform.Find("CanvasDialog/Canvas/Header/Back_Btn").GetComponent<PressableButton>();
+
             var tab = transform.Find("CanvasDialog/Canvas/Content/Tabs");
             _tabBtns = new bool[tab.childCount].Select((_, idx) => tab.GetChild(idx).GetComponent<PressableButton>()).ToArray();
             var tabContent = transform.Find("CanvasDialog/Canvas/Content/TabContents");
@@ -57,11 +61,15 @@ namespace Core.View
 
         private void RegisterEvents()
         {
+            _closeBtn.OnClicked.AddListener(() =>
+            {
+                _gameStore.HideCurrentModule(ModuleName.SettingScreen);
+            });
             _backBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<SettingScreenModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                    moduleName: ModuleName.LandingScreen)).Refresh();
             });
 
             for (int idx = 0; idx < _tabBtns.Length; idx++)

@@ -1,6 +1,4 @@
-﻿using Shared.Network;
-
-namespace Core.Business
+﻿namespace Core.Business
 {
     public interface IRoomStatus : IBaseModule
     { }

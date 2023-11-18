@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 
 namespace Shared.Network
 {
+    [System.Serializable]
     [MessagePackObject(true)]
     public class RegisterRequest : LoginRequest
     {

@@ -80,6 +80,8 @@ Material:
     - _Line_Gradient_Blend_: 0
     - _Line_Width_: 1
     - _Mapped_Environment_Enabled_: 0
+    - _Occluded_Intensity_: 1
+    - _Orthographic_Distance_: 400
     - _Power_: 1
     - _Rate_: 0
     - _Reflected_: 1
@@ -87,6 +89,7 @@ Material:
     - _Sharpness_: 0
     - _Shininess_: 10
     - _Sky_Enabled_: 1
+    - _Smooth_Edges_: 0
     - _Specular_: 0
     - _SrcBlend: 1
     - _StencilComparison: 0
@@ -102,8 +105,8 @@ Material:
     m_Colors:
     - _Albedo_: {r: 1, g: 1, b: 1, a: 1}
     - _Base_Color_: {r: 0, g: 0, b: 0, a: 1}
-    - _Bottom_Left_: {r: 0.62352943, g: 0.63529414, b: 0.9882353, a: 1}
-    - _Bottom_Right_: {r: 0.3647059, g: 0.35686275, b: 0.83137256, a: 1}
+    - _Bottom_Left_: {r: 0.49803922, g: 0.74509805, b: 1, a: 1}
+    - _Bottom_Right_: {r: 0.23137255, g: 0.3882353, b: 0.79607844, a: 1}
     - _ClipRect: {r: -32767, g: -32767, b: 32767, a: 0}
     - _ClipRectRadii: {r: 10, g: 10, b: 10, a: 0}
     - _Decal_Scale_XY_: {r: 1.5, g: 1.5, b: 0, a: 0}
@@ -116,6 +119,6 @@ Material:
     - _Line_Color_: {r: 0.078431375, g: 0.08627451, b: 0.16078432, a: 1}
     - _OccludedColor: {r: 0, g: 0.5, b: 1, a: 1}
     - _Sky_Color_: {r: 0.866667, g: 0.917647, b: 1, a: 1}
-    - _Top_Left_: {r: 0.827044, g: 0.83262324, b: 1, a: 1}
-    - _Top_Right_: {r: 0.3647059, g: 0.35686275, b: 0.83137256, a: 1}
+    - _Top_Left_: {r: 0.495283, g: 0.74323875, b: 1, a: 1}
+    - _Top_Right_: {r: 0.22801706, g: 0.38663232, b: 0.7924528, a: 1}
   m_BuildTextureStacks: []

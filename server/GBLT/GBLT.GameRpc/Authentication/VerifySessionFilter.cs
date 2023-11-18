@@ -1,6 +1,6 @@
-using Core.Service;
 using Grpc.Core;
 using MagicOnion.Server;
+using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace RpcService.Authentication
@@ -20,6 +20,7 @@ namespace RpcService.Authentication
 
         public override async ValueTask Invoke(ServiceContext context, Func<ServiceContext, ValueTask> next)
         {
+            _logger.LogWarning(context.CallContext.Method);
             var identity = context.CallContext.GetHttpContext().User.Identity;
             if (identity.IsAuthenticated)
             {

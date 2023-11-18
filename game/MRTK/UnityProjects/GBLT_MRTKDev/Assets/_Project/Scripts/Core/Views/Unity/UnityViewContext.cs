@@ -68,7 +68,7 @@ namespace Core.View
             IViewLayerManager viewLayerManager = _container.Resolve<IReadOnlyList<IViewLayerManager>>().ElementAt((int)config.UIType);
             View.transform.SetParent(viewLayerManager.GetLayerRoot(config.Layer));
             if (_unityGo.gameObject.activeInHierarchy)
-                _unityGo.StartCoroutine(ExpandCanvas());
+                GameSingleton.Instance.StartCoroutine(ExpandCanvas());
         }
 
         private IEnumerator ExpandCanvas()
@@ -111,7 +111,7 @@ namespace Core.View
         private IEnumerator CoShow()
         {
             if (!_unityGo.HasMethod(DefaultFunc.Show.ToString())) yield break;
-            yield return _unityGo.StartCoroutine(DefaultFunc.Show.ToString());
+            yield return GameSingleton.Instance.StartCoroutine(DefaultFunc.Show.ToString());
         }
 
         public override void Hide()
@@ -123,13 +123,13 @@ namespace Core.View
         private IEnumerator CoHide()
         {
             if (!_unityGo.HasMethod(DefaultFunc.Hide.ToString())) yield break;
-            yield return _unityGo.StartCoroutine(DefaultFunc.Hide.ToString());
+            yield return GameSingleton.Instance.StartCoroutine(DefaultFunc.Hide.ToString());
         }
 
         public override void Destroy()
         {
-            if (_unityGo.gameObject.activeInHierarchy)
-                _unityGo.StartCoroutine(CoDestroy());
+            if (_unityGo && _unityGo.gameObject)
+                GameSingleton.Instance.StartCoroutine(CoDestroy());
         }
 
         private IEnumerator CoDestroy()

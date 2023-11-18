@@ -71,6 +71,7 @@ namespace Core.View
             yield return new WaitForSeconds(signal.DespawnTime);
             transform.SetActive(false);
             signal.OnClose?.Invoke();
+            OnShowToast(new ShowToastSignal(isShow: false));
         }
 
         private async void OnShowToast(ShowToastSignal signal)

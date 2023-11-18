@@ -1,10 +1,16 @@
 using Core.Business;
+using Core.EventSignal;
 using Core.Extension;
 using Core.Framework;
 using Core.Module;
 using Core.Utility;
+using Cysharp.Threading.Tasks;
 using Microsoft.MixedReality.Toolkit.UX;
+using Models;
+using Shared;
+using Shared.Extension;
 using Shared.Network;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -22,42 +28,296 @@ namespace Core.View
         [DebugOnly] public Image IconImg;
     }
 
+    [System.Serializable]
+    public abstract class SubView
+    {
+        [DebugOnly] public Transform Transform;
+        [SerializeField][DebugOnly] protected PressableButton _backBtn;
+        [SerializeField][DebugOnly] protected IObjectResolver _container;
+        [SerializeField][DebugOnly] protected Transform _viewRoot;
+        [SerializeField][DebugOnly] protected Action _onBack;
+
+        public SubView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack = null)
+        {
+            Transform = transform;
+            _container = container;
+            _viewRoot = viewRoot;
+            _onBack = onBack;
+        }
+
+        public virtual void RegisterEvents()
+        {
+            _backBtn.OnClicked.AddListener(() =>
+            {
+                _onBack?.Invoke();
+                Transform.SetActive(false);
+            });
+        }
+    }
+
     public class RoomStatusView : UnityView
     {
+        [System.Serializable]
+        public class SelectToolView : SubView
+        {
+            private readonly GameStore _gameStore;
+            private readonly ClassRoomHub _classRoomHub;
+            private readonly QuizzesHub _quizzesHub;
+            private readonly VirtualRoomPresenter _virtualRoomPresenter;
+            private readonly IUserDataController _userDataController;
+
+            [SerializeField][DebugOnly] protected PressableButton[] _toolBtns;
+
+            public SelectToolView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
+            {
+                _gameStore = container.Resolve<GameStore>();
+                _classRoomHub = container.Resolve<ClassRoomHub>();
+                _quizzesHub = container.Resolve<QuizzesHub>();
+                _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
+                _userDataController = container.Resolve<IUserDataController>();
+
+                _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
+
+                _toolBtns = new PressableButton[] {
+                    Transform.Find("Content/Scroll View/Viewport/Content").GetChild(0).GetComponent<PressableButton>()
+                };
+
+                RegisterEvents();
+            }
+
+            public override void RegisterEvents()
+            {
+                base.RegisterEvents();
+
+                _toolBtns[0].OnClicked.AddListener(async () =>
+                {
+                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
+
+                    if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                        return;
+
+                    _userDataController.ServerData.RoomStatus.InGameStatus = response;
+                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _classRoomHub.InviteToGame(response);
+
+                    _gameStore.HideCurrentModule(ModuleName.RoomStatus);
+                    (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                        moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
+                });
+            }
+        }
+
+        [System.Serializable]
+        public class EditAvatarView : SubView
+        {
+            private readonly IBundleLoader _bundleLoader;
+            private readonly ClassRoomHub _classRoomHub;
+            private IUserDataController _userDataController;
+
+            [SerializeField][DebugOnly] protected MRTKTMPInputField _nameInput;
+
+            [SerializeField][DebugOnly] protected ScrollRect _avatarScrollRect;
+            [SerializeField][DebugOnly] protected RectTransform _avatarContentPanel;
+            [SerializeField][DebugOnly] protected PressableButton[] _avatarBtns;
+            [SerializeField][DebugOnly] protected ScrollRect _modelScrollRect;
+            [SerializeField][DebugOnly] protected RectTransform _modelContentPanel;
+            [SerializeField][DebugOnly] protected PressableButton[] _modelBtns;
+
+            [SerializeField][DebugOnly] protected PressableButton _submitBtn;
+
+            public string SelectedAvatarPath => Defines.PrefabKey.AvatarPaths[_selectedAvatarIdx];
+            [SerializeField][DebugOnly] protected int _selectedAvatarIdx = 0;
+            public string SelectedModelPath => Defines.PrefabKey.ModelPaths[_selectedModelIdx];
+            [SerializeField][DebugOnly] protected int _selectedModelIdx = 0;
+
+            [SerializeField] protected Color _selectedColor = new(1f, 1f, 1f, 1f);
+            [SerializeField] protected Color _defaultColor = "#27984CFF".HexToColor();
+
+            public EditAvatarView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
+            {
+                _classRoomHub = container.Resolve<ClassRoomHub>();
+                _bundleLoader = container.Resolve<IReadOnlyList<IBundleLoader>>().ElementAt((int)BundleLoaderName.Addressable);
+                _userDataController = container.Resolve<IUserDataController>();
+
+                _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
+
+                _nameInput = Transform.Find("Content/Form/InputField/InputField (TMP)").GetComponent<MRTKTMPInputField>();
+
+                _avatarScrollRect = Transform.Find("Content/Form/Avatar_SV").GetComponent<ScrollRect>();
+                _avatarContentPanel = Transform.Find("Content/Form/Avatar_SV/Viewport/Content").GetComponent<RectTransform>();
+                _avatarBtns = Defines.PrefabKey.AvatarPaths.Select((path, idx) =>
+                {
+                    if (idx > 0)
+                        Instantiate(_avatarContentPanel.GetChild(0), _avatarContentPanel);
+                    _avatarContentPanel.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.AvatarPaths[idx]}";
+                    return _avatarContentPanel.GetChild(idx).GetComponent<PressableButton>();
+                }).ToArray();
+
+                _modelScrollRect = Transform.Find("Content/Form/Model_SV").GetComponent<ScrollRect>();
+                _modelContentPanel = Transform.Find("Content/Form/Model_SV/Viewport/Content").GetComponent<RectTransform>();
+                _modelBtns = Defines.PrefabKey.ModelThumbnailPaths.Select((path, idx) =>
+                {
+                    if (idx > 0)
+                        Instantiate(_modelContentPanel.GetChild(0), _modelContentPanel);
+                    _modelContentPanel.GetChild(idx).name = $"{idx} - {Defines.PrefabKey.ModelThumbnailPaths[idx]}";
+                    return _modelContentPanel.GetChild(idx).GetComponent<PressableButton>();
+                }).ToArray();
+
+                _submitBtn = Transform.Find("Content/Form/Submit_Btn").GetComponent<PressableButton>();
+
+                FirstSetupIcon();
+            }
+
+            private void EnableAvatar(int index)
+            {
+                _avatarBtns[_selectedAvatarIdx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
+                _selectedAvatarIdx = index;
+                _avatarBtns[_selectedAvatarIdx].transform.Find("Backplate").GetComponent<Image>().color = _selectedColor;
+            }
+
+            private void EnableModel(int index)
+            {
+                _modelBtns[_selectedModelIdx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
+                _selectedModelIdx = index;
+                _modelBtns[_selectedModelIdx].transform.Find("Backplate").GetComponent<Image>().color = _selectedColor;
+            }
+
+            private async void FirstSetupIcon()
+            {
+                for (int idx = 0; idx < _avatarBtns.Length; idx++)
+                {
+                    var sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.AvatarPaths[idx]);
+                    _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = sprite;
+                    _avatarBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
+                }
+
+                for (int idx = 0; idx < _modelBtns.Length; idx++)
+                {
+                    var sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.ModelThumbnailPaths[idx]);
+                    _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = sprite;
+                    _modelBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
+                }
+
+                RegisterEvents();
+            }
+
+            public void SetAvatarIcon()
+            {
+                _selectedAvatarIdx = Defines.PrefabKey.AvatarPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.AvatarPath).First().idx;
+                EnableAvatar(_selectedAvatarIdx);
+                _avatarBtns[_selectedAvatarIdx].GetComponent<RectTransform>().ScrollToThisItem(_avatarScrollRect, _avatarContentPanel);
+
+                _selectedModelIdx = Defines.PrefabKey.ModelPaths.Select((path, idx) => (path, idx)).Where(ele => ele.path == _userDataController.ServerData.RoomStatus.RoomStatus.Self.ModelPath).First().idx;
+                EnableModel(_selectedModelIdx);
+                _modelBtns[_selectedModelIdx].GetComponent<RectTransform>().ScrollToThisItem(_modelScrollRect, _modelContentPanel);
+            }
+
+            public override void RegisterEvents()
+            {
+                base.RegisterEvents();
+
+                for (int idx = 0; idx < _avatarBtns.Length; idx++)
+                {
+                    int index = idx;
+                    _avatarBtns[idx].OnClicked.AddListener(() => EnableAvatar(index));
+                }
+
+                for (int idx = 0; idx < _modelBtns.Length; idx++)
+                {
+                    int index = idx;
+                    _modelBtns[idx].OnClicked.AddListener(() => EnableModel(index));
+                }
+
+                _submitBtn.OnClicked.AddListener(async () =>
+                {
+                    await _classRoomHub.UpdateAvatar(_nameInput.text.IsNullOrEmpty() ? "Name" : _nameInput.text, SelectedModelPath, SelectedAvatarPath);
+                    Transform.SetActive(false);
+                    _onBack?.Invoke();
+                });
+            }
+        }
+
+        [System.Serializable]
+        public class SettingView : SubView
+        {
+            [SerializeField][DebugOnly] protected MRTKTMPInputField _roomCapInput;
+
+            public SettingView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
+            {
+                _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
+
+                _roomCapInput = Transform.Find("Content/Form/InputField/InputField (TMP)").GetComponent<MRTKTMPInputField>();
+
+                RegisterEvents();
+            }
+
+            public override void RegisterEvents()
+            {
+                base.RegisterEvents();
+            }
+        }
+
+        private IObjectResolver _container;
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
         private VirtualRoomPresenter _virtualRoomPresenter;
         private IUserDataController _userDataController;
+        private ClassRoomHub _classRoomHub;
 
-        [SerializeField][DebugOnly] private PressableButton _backBtn;
-        [SerializeField][DebugOnly] private PressableButton _startBtn;
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
+        [SerializeField][DebugOnly] private PressableButton _quitBtn;
+
         [SerializeField][DebugOnly] private TextMeshProUGUI _titleTxt;
         [SerializeField][DebugOnly] private TextMeshProUGUI _amountTxt;
+        [SerializeField][DebugOnly] private RoomStatusPerson _hostItem;
         [SerializeField][DebugOnly] private RoomStatusPerson[] _personItems;
 
-        [SerializeField][DebugOnly] private PressableButton _selectQuizBtn;
-        [SerializeField][DebugOnly] private PressableButton _shareBtn;
-        [SerializeField][DebugOnly] private TextMeshProUGUI _shareTxt;
+        [SerializeField][DebugOnly] private PressableButton _selectToolBtn;
+        [SerializeField][DebugOnly] private PressableButton _editAvatarBtn;
         [SerializeField][DebugOnly] private PressableButton _settingBtn;
+
+        [DebugOnly] public Transform RootContent;
+        [SerializeField][DebugOnly] private EditAvatarView _editAvatarView;
+        [SerializeField][DebugOnly] private SelectToolView _selectToolView;
+        [SerializeField][DebugOnly] private SettingView _settingView;
+
+        [SerializeField][DebugOnly] bool _isFirstCreate = true;
+        private void OnEnable()
+        {
+            if (!_isFirstCreate)
+                Refresh();
+            _isFirstCreate = false;
+        }
 
         [Inject]
         public void Init(
             GameStore gameStore,
             IObjectResolver container)
         {
+            _container = container;
             _gameStore = gameStore;
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _userDataController = container.Resolve<IUserDataController>();
+            _classRoomHub = container.Resolve<ClassRoomHub>();
         }
 
         private void GetReferences()
         {
-            _backBtn = transform.Find("CanvasDialog/Canvas/Header/Back_Btn").GetComponent<PressableButton>();
-            _startBtn = transform.Find("CanvasDialog/Canvas/Header/Start_Btn").GetComponent<PressableButton>();
-            _titleTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Title").GetComponent<TextMeshProUGUI>();
-            _amountTxt = transform.Find("CanvasDialog/Canvas/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
-            var list = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Close_Btn").GetComponent<PressableButton>();
+            _quitBtn = transform.Find("CanvasDialog/Canvas/Content/Header/Quit_Btn").GetComponent<PressableButton>();
+
+            _titleTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Title").GetComponent<TextMeshProUGUI>();
+            _amountTxt = transform.Find("CanvasDialog/Canvas/Content/Header/Content/Amount").GetComponent<TextMeshProUGUI>();
+
+            var hostTransform = transform.Find("CanvasDialog/Canvas/Content/Content/Person");
+            _hostItem = new RoomStatusPerson
+            {
+                Button = hostTransform.GetComponent<PressableButton>(),
+                NameTxt = hostTransform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>(),
+                IconImg = hostTransform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>(),
+            };
+            var list = transform.Find("CanvasDialog/Canvas/Content/Content/Scroll View/Viewport/Content");
             _personItems = new bool[list.childCount].Select((_, idx) =>
             {
                 Transform person = list.GetChild(idx);
@@ -69,35 +329,57 @@ namespace Core.View
                 };
             }).ToArray();
 
-            _selectQuizBtn = transform.Find("CanvasDialog/Canvas/Footer/SelectQuiz_Btn").GetComponent<PressableButton>();
-            _shareBtn = transform.Find("CanvasDialog/Canvas/Footer/Share_Btn").GetComponent<PressableButton>();
-            _shareTxt = _shareBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>();
-            _settingBtn = transform.Find("CanvasDialog/Canvas/Footer/Setting_Btn").GetComponent<PressableButton>();
+            _selectToolBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/SelectTool_Btn").GetComponent<PressableButton>();
+            _editAvatarBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/EditAvatar_Btn").GetComponent<PressableButton>();
+            _settingBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/Setting_Btn").GetComponent<PressableButton>();
+
+            RootContent = transform.Find("CanvasDialog/Canvas/Content");
+            _selectToolView = new SelectToolView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform, OnBack);
+            _editAvatarView = new EditAvatarView(transform.Find("CanvasDialog/Canvas/EditAvatar"), _container, transform, OnBack);
+            _settingView = new SettingView(transform.Find("CanvasDialog/Canvas/Setting"), _container, transform, OnBack);
+
+            _selectToolView.Transform.SetActive(false);
+            _editAvatarView.Transform.SetActive(false);
+            _settingView.Transform.SetActive(false);
+        }
+
+        private void OnBack()
+        {
+            RootContent.SetActive(true);
         }
 
         private void RegisterEvents()
         {
-            _backBtn.OnClicked.AddListener(async () =>
+            _closeBtn.OnClicked.AddListener(() =>
             {
-                _gameStore.GState.RemoveModel<RoomStatusModel>();
-                await _gameStore.GetOrCreateModule<LandingScreen, LandingScreenModel>(
-                    "", ViewName.Unity, ModuleName.LandingScreen);
+                _gameStore.HideCurrentModule(ModuleName.RoomStatus);
             });
-
-            _startBtn.OnClicked.AddListener(async () =>
+            _quitBtn.OnClicked.AddListener(() =>
             {
-                _gameStore.GState.RemoveModel<RoomStatusModel>();
-                await _virtualRoomPresenter.Spawn();
-            });
-
-            for (int idx = 0; idx < _personItems.Length; idx++)
-            {
-                int index = idx;
-                _personItems[index].Button.OnClicked.AddListener(() =>
+                _showPopupPublisher.Publish(new ShowPopupSignal(title: "Are you sure you want to quit the class room?", yesContent: "Yes", noContent: "No", yesAction: async (value1, value2) =>
                 {
-                    Debug.Log($"{_personItems[index].NameTxt.text} - {index}");
-                });
-            }
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal());
+                    await _classRoomHub.LeaveAsync();
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+                }, noAction: (_, _) => { }));
+            });
+
+            _selectToolBtn.OnClicked.AddListener(() =>
+            {
+                RootContent.SetActive(false);
+                _selectToolView.Transform.SetActive(true);
+            });
+            _editAvatarBtn.OnClicked.AddListener(() =>
+            {
+                RootContent.SetActive(false);
+                _editAvatarView.Transform.SetActive(true);
+                _editAvatarView.SetAvatarIcon();
+            });
+            _settingBtn.OnClicked.AddListener(() =>
+            {
+                RootContent.SetActive(false);
+                _settingView.Transform.SetActive(true);
+            });
         }
 
         public override void OnReady()
@@ -108,7 +390,27 @@ namespace Core.View
             Refresh();
         }
 
-        public void Refresh()
+        public async UniTask UpdateCharacter(PublicUserData userData, bool isShow = true)
+        {
+            if (userData.IsHost)
+                _hostItem.Button.SetActive(isShow);
+            else
+                _personItems[userData.Index].Button.SetActive(isShow);
+            if (!isShow) return;
+
+            var avt = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(userData.AvatarPath);
+            if (userData.IsHost)
+            {
+                _hostItem.NameTxt.text = userData.Name;
+                _hostItem.IconImg.sprite = avt;
+                return;
+            }
+
+            _personItems[userData.Index].NameTxt.text = userData.Name;
+            _personItems[userData.Index].IconImg.sprite = avt;
+        }
+
+        public async void Refresh()
         {
             if (!_userDataController.ServerData.IsInRoom)
             {
@@ -116,31 +418,19 @@ namespace Core.View
                 return;
             }
 
-            bool isInGameView = _userDataController.ServerData.IsInGame;
-            GeneralRoomStatusResponse status = isInGameView ? _userDataController.ServerData.RoomStatus.InGameStatus : _userDataController.ServerData.RoomStatus.RoomStatus;
+            bool isInGame = _userDataController.ServerData.IsInGame;
+            GeneralRoomStatusResponse status = _userDataController.ServerData.RoomStatus.RoomStatus;
 
-            string idPrefix = isInGameView ? "PIN" : "Room Id";
+            string idPrefix = "Room Id";
             _titleTxt.SetText($"{idPrefix}: {status.Id}");
             _amountTxt.SetText($"Amount: {status.Amount}");
             for (int idx = 0; idx < _personItems.Length; idx++)
-            {
-                _personItems[idx].Button.SetActive(idx >= status.Others.Length);
-                if (idx >= status.Others.Length) continue;
-
-                if (status.Others[idx].IsHost)
-                {
-                    idx--;
-                    continue;
-                }
-
-                _personItems[idx].NameTxt.text = status.Others[idx].Name;
-            }
-            _startBtn.SetActive(isInGameView);
+                _personItems[idx].Button.SetActive(false);
+            for (int idx = 0; idx < status.AllInRoom.Length; idx++)
+                await UpdateCharacter(status.AllInRoom[idx]);
 
             bool isHost = _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost;
-            _selectQuizBtn.SetActive(isInGameView);
-            _shareBtn.SetActive(isHost);
-            _shareTxt.text = _userDataController.ServerData.IsSharing ? "Stop Sharing" : "Share Screen";
+            _selectToolBtn.SetActive(isHost && !isInGame);
             _settingBtn.SetActive(isHost);
         }
     }

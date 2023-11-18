@@ -6,12 +6,16 @@ using Core.Module;
 using Core.Network;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
+using MessagePipe;
 using Microsoft.MixedReality.Toolkit.UX;
+using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using VContainer;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace Core.View
 {
@@ -31,8 +35,11 @@ namespace Core.View
         private AudioPoolManager _audioPoolManager;
         private UserAuthentication _userAuthentication;
         private ClassRoomHub _classRoomHub;
+        private QuizzesHub _quizzesHub;
         private VirtualRoomPresenter _virtualRoomPresenter;
         private IUserDataController _userDataController;
+
+        [SerializeField][DebugOnly] private PressableButton _closeBtn;
 
         [SerializeField][DebugOnly] private MRTKTMPInputField _roomInputField;
         [SerializeField][DebugOnly] private PressableButton _joinBtn;
@@ -51,6 +58,14 @@ namespace Core.View
 
         [SerializeField][DebugOnly] private PressableButton _settingBtn;
 
+        [SerializeField][DebugOnly] bool _isFirstCreate = true;
+        private void OnEnable()
+        {
+            if (!_isFirstCreate)
+                Refresh();
+            _isFirstCreate = false;
+        }
+
         [Inject]
         public void Init(
             GameStore gameStore,
@@ -60,19 +75,22 @@ namespace Core.View
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
             _userAuthentication = container.Resolve<UserAuthentication>();
             _classRoomHub = container.Resolve<ClassRoomHub>();
+            _quizzesHub = container.Resolve<QuizzesHub>();
             _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _userDataController = container.Resolve<IUserDataController>();
         }
 
         private void GetReferences()
         {
+            _closeBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/Close_Btn").GetComponent<PressableButton>();
+
             _roomInputField = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/InputField/InputField (TMP)").GetComponent<MRTKTMPInputField>();
             _joinBtn = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/Join_Btn").GetComponent<PressableButton>();
             _createBtn = transform.Find("CanvasDialog/Canvas/Header/JoinRoom/Create_Btn").GetComponent<PressableButton>();
 
-            _loginBtn = transform.Find("CanvasDialog/Canvas/Header/User/Login_Btn").GetComponent<PressableButton>();
-            _userBtn = transform.Find("CanvasDialog/Canvas/Header/User/IsLoggedIn/User_Btn").GetComponent<PressableButton>();
-            _userDropdown = transform.Find("CanvasDialog/Canvas/Header/User/IsLoggedIn/User_Dropdown");
+            _loginBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/Login_Btn").GetComponent<PressableButton>();
+            _userBtn = transform.Find("CanvasDialog/Canvas/Header/RightSide/IsLoggedIn/User_Btn").GetComponent<PressableButton>();
+            _userDropdown = transform.Find("CanvasDialog/Canvas/Header/RightSide/IsLoggedIn/User_Dropdown");
             _userDropdownActions = new bool[_userDropdown.childCount].Select((_, idx) => _userDropdown.GetChild(idx).GetComponent<PressableButton>()).ToArray();
 
             var toolContent = transform.Find("CanvasDialog/Canvas/Content/Scroll View/Viewport/Content");
@@ -104,8 +122,8 @@ namespace Core.View
             };
 
             _gameStore.GState.RemoveModel<LandingScreenModel>();
-            (await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                "", ViewName.Unity, ModuleName.RoomStatus)).Model.Refresh();
+            (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
+                 moduleName: ModuleName.RoomStatus)).Refresh();
 
             await _virtualRoomPresenter.Spawn();
         }
@@ -131,28 +149,68 @@ namespace Core.View
             }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter Password" }));
         }
 
+        private async UniTask TryJoinQuizzesRoom()
+        {
+            if (!_userDataController.ServerData.IsInRoom || _userDataController.ServerData.IsInGame) return;
+
+            _showLoadingPublisher.Publish(new ShowLoadingSignal());
+            QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData
+            {
+                RoomId = _roomInputField.text,
+                UserData = _userDataController.ServerData.RoomStatus.RoomStatus.Self,
+            });
+            _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
+            _virtualRoomPresenter.OnSelfJoinQuizzes();
+
+            _gameStore.RemoveCurrentModel();
+            await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                moduleName: ModuleName.QuizzesRoomStatus);
+
+            _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+        }
+
+        private void TryJoinClassRoom()
+        {
+            if (_userDataController.ServerData.IsInRoom) return;
+
+            _showPopupPublisher.Publish(new ShowPopupSignal(title: "Enter Your Name", yesContent: "Join", noContent: "Cancel", yesAction: async (value, _) =>
+            {
+                _showLoadingPublisher.Publish(new ShowLoadingSignal());
+                RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData
+                {
+                    RoomId = _roomInputField.text,
+                    UserName = value
+                });
+
+                if (!response.Success && response.JoinClassRoomData != null && !string.IsNullOrEmpty(response.JoinClassRoomData.Password))
+                    AskForPassword(value);
+                else if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                    return;
+
+                await OnSuccessJoinRoom(response);
+
+                _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+            }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter name" }));
+        }
+
         private void RegisterEvents()
         {
-            _joinBtn.OnClicked.AddListener(() =>
+            _closeBtn.OnClicked.AddListener(() =>
             {
-                _showPopupPublisher.Publish(new ShowPopupSignal(title: "Enter Your Name", yesContent: "Join", noContent: "Cancel", yesAction: async (value, _) =>
+                _gameStore.HideCurrentModule(ModuleName.LandingScreen);
+            });
+
+            _joinBtn.OnClicked.AddListener(async () =>
+            {
+                if (_roomInputField.text.IsNullOrEmpty())
                 {
-                    _showLoadingPublisher.Publish(new ShowLoadingSignal());
-                    RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData
-                    {
-                        RoomId = _roomInputField.text,
-                        UserName = value
-                    });
+                    _showToastPublisher.Publish(new ShowToastSignal(content: "Room Id Cannot Be Empty"));
+                    return;
+                }
 
-                    if (!response.Success && !string.IsNullOrEmpty(response.Password))
-                        AskForPassword(value);
-                    else if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
-                        return;
-
-                    await OnSuccessJoinRoom(response);
-
-                    _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
-                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter name" }));
+                TryJoinClassRoom();
+                await TryJoinQuizzesRoom();
             });
 
             _createBtn.OnClicked.AddListener(() =>
@@ -163,8 +221,8 @@ namespace Core.View
                     RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData()
                     {
                         Password = value1,
-                        Amount = int.Parse(value2),
-                    });
+                        Amount = value2.IsNullOrEmpty() ? 48 : int.Parse(value2),
+                    }, true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                         return;
@@ -172,15 +230,14 @@ namespace Core.View
                     await OnSuccessJoinRoom(response);
 
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
-                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Enter Number of Slot" }));
-
+                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true, true }, new string[] { "Enter Password", "Capacity (24-48, Default: 48)" }));
             });
 
             _loginBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
-                await _gameStore.GetOrCreateModule<LoginScreen, LoginScreenModel>(
-                    "", ViewName.Unity, ModuleName.LoginScreen);
+                await _gameStore.GetOrCreateModel<LoginScreen, LoginScreenModel>(
+                    moduleName: ModuleName.LoginScreen);
             });
             _userBtn.OnClicked.AddListener(() =>
             {
@@ -210,17 +267,26 @@ namespace Core.View
                 _toolBtns[idx].OnClicked.AddListener(async () =>
                 {
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
-                    await _gameStore.GetOrCreateModule<ToolDescription, ToolDescriptionModel>(
-                        "", ViewName.Unity, ModuleName.ToolDescription);
+                    await _gameStore.GetOrCreateModel<ToolDescription, ToolDescriptionModel>(
+                        moduleName: ModuleName.ToolDescription);
                 });
             }
             for (int idx = 0; idx < _openToolBtns.Length; idx++)
             {
                 _openToolBtns[idx].OnClicked.AddListener(async () =>
                 {
+                    QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
+
+                    if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                        return;
+
+                    _userDataController.ServerData.RoomStatus.InGameStatus = response;
+                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _classRoomHub.InviteToGame(response);
+
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
-                    await _gameStore.GetOrCreateModule<RoomStatus, RoomStatusModel>(
-                        "", ViewName.Unity, ModuleName.RoomStatus);
+                    await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                        moduleName: ModuleName.QuizzesRoomStatus);
                 });
             }
 
@@ -236,8 +302,8 @@ namespace Core.View
             _settingBtn.OnClicked.AddListener(async () =>
             {
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
-                await _gameStore.GetOrCreateModule<SettingScreen, SettingScreenModel>(
-                    "", ViewName.Unity, ModuleName.SettingScreen);
+                await _gameStore.GetOrCreateModel<SettingScreen, SettingScreenModel>(
+                    moduleName: ModuleName.SettingScreen);
             });
         }
 
@@ -251,13 +317,16 @@ namespace Core.View
 
         public void Refresh()
         {
+            bool isInRoomView = _userDataController.ServerData.IsInRoom;
             bool isInGameView = _userDataController.ServerData.IsInGame;
-            _roomInputField.SetActive(!isInGameView);
-            _joinBtn.SetActive(!isInGameView);
-            _createBtn.SetActive(!isInGameView);
+            _roomInputField.SetActive(!isInRoomView || !isInGameView);
+            _joinBtn.SetActive(!isInRoomView || !isInGameView);
+            _joinBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = !isInRoomView ? "Join" : "Join Quizzes";
+
+            _createBtn.SetActive(!isInRoomView);
             _userDropdown.GetChild((int)LandingScreenUserDropdownActionType.Logout).SetActive(!isInGameView);
             foreach (var btn in _openToolBtns)
-                btn.SetActive(!isInGameView);
+                btn.SetActive(isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
 
             EnableIsSignIn();
         }

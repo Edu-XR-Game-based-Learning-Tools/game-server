@@ -2,6 +2,7 @@
 
 namespace Shared.Network
 {
+    [System.Serializable]
     [MessagePackObject(true)]
     public class ExchangeRefreshTokenRequest
     {

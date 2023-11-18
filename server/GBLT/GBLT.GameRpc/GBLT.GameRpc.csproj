@@ -9,6 +9,7 @@
 
     <ItemGroup>
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.51.0" />
         <PackageReference Include="MagicOnion" Version="5.1.2" />
         <PackageReference Include="MagicOnion.Server" Version="5.1.2" />

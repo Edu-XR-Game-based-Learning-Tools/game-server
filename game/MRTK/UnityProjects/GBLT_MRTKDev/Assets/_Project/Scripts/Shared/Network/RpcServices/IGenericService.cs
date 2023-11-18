@@ -21,6 +21,5 @@ namespace Shared.Network
     {
         public string LauncherUrl { get; set; }
         public string[] EndPoints { get; set; }
-        public string[] ContractEndPoints { get; set; }
     }
 }

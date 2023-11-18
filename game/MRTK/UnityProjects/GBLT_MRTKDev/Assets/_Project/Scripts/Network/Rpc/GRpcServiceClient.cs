@@ -81,8 +81,8 @@ namespace Core.Network
         {
             if (_channel == null || !_channel.IsConnected)
             {
-                Debug.Log($"GRpcServiceClient: GetAliveChannel and connect to the endpoint: {_endPointSwitcher.ApiEndPoint}");
-                _channel = GrpcChannelx.ForAddress(_endPointSwitcher.ApiEndPoint);
+                Debug.Log($"GRpcServiceClient: GetAliveChannel and connect to the endpoint: {_endPointSwitcher.HubEndpoint}");
+                _channel = GrpcChannelx.ForAddress(_endPointSwitcher.HubEndpoint);
             }
 
             return _channel;

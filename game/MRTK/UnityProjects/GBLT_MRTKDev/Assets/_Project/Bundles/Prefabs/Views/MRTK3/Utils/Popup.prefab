@@ -28,7 +28,7 @@ RectTransform:
   m_GameObject: {fileID: 2921493081022025555}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.001, y: 0.001, z: 0.001}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6584819113500981602}
@@ -157,8 +157,8 @@ MonoBehaviour:
   _noTxt: {fileID: 0}
   _yesBtn: {fileID: 0}
   _noBtn: {fileID: 0}
-  _inputFieldContainer: {fileID: 0}
-  _inputField: {fileID: 0}
+  _inputFieldContainers: []
+  _inputFields: []
 --- !u!1 &6584819113482501658
 GameObject:
   m_ObjectHideFlags: 0
@@ -1068,7 +1068,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.1
       objectReference: {fileID: 0}
     - target: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1106,13 +1106,33 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1703507464463904812, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
 --- !u!224 &1858178512848268926 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
   m_PrefabInstance: {fileID: 7736221966368630657}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &9005096853408126883 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1703507464463904802, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
+  m_PrefabInstance: {fileID: 7736221966368630657}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9208757562237880060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9005096853408126883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a55c55bcb6842b94db6488b68732ce01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding: {x: -8, y: -5, z: -8, w: -5}
+  m_Softness: {x: 0, y: 0}
 --- !u!1001 &8681006618183110706
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1178,7 +1198,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.1
       objectReference: {fileID: 0}
     - target: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1216,10 +1236,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1703507464463904812, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
 --- !u!224 &787046807169587661 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8256513604164798975, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
   m_PrefabInstance: {fileID: 8681006618183110706}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8060654455177502736 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1703507464463904802, guid: 1540fc76a99534e419223d80f358dc9b, type: 3}
+  m_PrefabInstance: {fileID: 8681006618183110706}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2553702428926379209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8060654455177502736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a55c55bcb6842b94db6488b68732ce01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding: {x: -8, y: -5, z: -8, w: -5}
+  m_Softness: {x: 0, y: 0}

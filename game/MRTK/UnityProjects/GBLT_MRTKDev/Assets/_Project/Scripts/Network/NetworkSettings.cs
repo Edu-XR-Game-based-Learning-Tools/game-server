@@ -3,6 +3,7 @@
     public enum HostingType
     {
         Local,
+        Local_IP,
         Develop,
         Production,
         Stage,
@@ -20,5 +21,6 @@
         }
 
         public ThingWithArrays[] DefaultApiEndPoints;
+        public ThingWithArrays[] DefaultHubEndPoints;
     }
 }

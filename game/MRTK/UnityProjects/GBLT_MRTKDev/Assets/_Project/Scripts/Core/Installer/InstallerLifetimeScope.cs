@@ -102,6 +102,9 @@ namespace Core.Framework
             builder.Register<IBaseScript, RoomStatusScript>(Lifetime.Scoped);
             builder.Register<IBaseModule, RoomStatus>(Lifetime.Scoped);
 
+            builder.Register<IBaseScript, QuizzesRoomStatusScript>(Lifetime.Scoped);
+            builder.Register<IBaseModule, QuizzesRoomStatus>(Lifetime.Scoped);
+
             // Utils
             builder.Register<IBaseScript, LoadingScript>(Lifetime.Scoped);
             builder.Register<IBaseModule, Loading>(Lifetime.Scoped);
@@ -169,6 +172,9 @@ namespace Core.Framework
 
             builder.RegisterComponentInHierarchy<PoolObjectMono>();
             builder.RegisterComponentInHierarchy<AudioController>();
+            builder.RegisterComponentInHierarchy<HandMenuController>();
+
+            builder.RegisterComponentInHierarchy<VirtualRoomPresenter>();
         }
 
         private void InstallScriptableObject()
@@ -180,10 +186,8 @@ namespace Core.Framework
 
         private void InstallEntryPoint()
         {
-            builder.Register<VirtualRoomPresenter>(Lifetime.Singleton);
             builder.Register<GameStore>(Lifetime.Singleton);
 
-            builder.RegisterEntryPoint<VirtualRoomPresenter>();
             builder.RegisterEntryPoint<GameStore>();
         }
     }
@@ -232,13 +236,14 @@ namespace Core.Framework
             builder.Register<IUserDataController, UserDataController>(Lifetime.Singleton);
 
             builder.Register<IGRpcServiceClient, GRpcServiceClient>(Lifetime.Singleton);
-            builder.Register<IRpcAuthController, RpcAuthController>(Lifetime.Singleton);
-            builder.Register<IDataServiceController, DataServiceController>(Lifetime.Singleton);
+            builder.Register<IRpcAuthController, AuthRestController>(Lifetime.Singleton);
+            builder.Register<IDataServiceController, DataRestController>(Lifetime.Singleton);
 
             builder.Register<GRpcAuthenticationFilter>(Lifetime.Singleton);
             builder.Register<GRpcRetryHandlerFilter>(Lifetime.Singleton);
 
             builder.Register<ClassRoomHub>(Lifetime.Singleton);
+            builder.Register<QuizzesHub>(Lifetime.Singleton);
 
             builder.Register<UserAuthentication>(Lifetime.Singleton);
         }

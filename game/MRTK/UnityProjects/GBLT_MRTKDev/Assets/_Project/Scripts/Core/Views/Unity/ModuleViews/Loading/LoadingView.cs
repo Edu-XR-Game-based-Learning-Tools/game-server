@@ -65,6 +65,7 @@ namespace Core.View
             yield return new WaitForSeconds(signal.DespawnTime);
             transform.SetActive(false);
             signal.OnClose?.Invoke();
+            OnShowLoading(new ShowLoadingSignal(isShow: false));
         }
 
         private void OnShowLoading(ShowLoadingSignal signal)

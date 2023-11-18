@@ -37,10 +37,12 @@ namespace Core.EventSignal
     public class OnVirtualRoomTickSignal
     {
         public VirtualRoomTickData TickData { get; private set; }
+        public SharingTickData SharingTickData { get; private set; }
 
-        public OnVirtualRoomTickSignal(VirtualRoomTickData tickData)
+        public OnVirtualRoomTickSignal(VirtualRoomTickData tickData = null, SharingTickData sharingTickData = null)
         {
             TickData = tickData;
+            SharingTickData = sharingTickData;
         }
     }
 }

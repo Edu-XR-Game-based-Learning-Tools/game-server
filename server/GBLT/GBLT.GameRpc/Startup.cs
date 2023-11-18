@@ -1,19 +1,23 @@
 using Core.Configuration;
 using Core.Entity;
 using Core.Service;
+using Core.Utility;
 using Grpc.Net.Client;
 using Infrastructure;
 using MagicOnion.Server;
 using MessagePipe;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using RedLockNet;
 using RedLockNet.SERedis;
 using RpcService.Authentication;
 using RpcService.Configuration;
 using Shared.Network;
+using System.Net;
 using System.Text;
 
 namespace RpcService
@@ -58,13 +62,58 @@ namespace RpcService
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+            AddSwaggerOnDevOnly(services);
+
+            services.AddControllers();
+            services.AddHealthChecks();
             services.AddAuthorization();
             services.AddMessagePipe();
 
-            services.AddCoreServices();
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowAnyOrigin();
+                });
+            });
 
-            services.AddControllersWithViews();
-            services.AddInjectServices();
+            services.AddCoreServices();
+        }
+
+        private void AddSwaggerOnDevOnly(IServiceCollection services)
+        {
+            string environment = Configuration.GetValue<string>("Environment");
+            if (environment.ToLower() != "production")
+                services.AddSwaggerGen(c =>
+                {
+                    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Server.API", Version = "v1" });
+                    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                    {
+                        Description = "Please insert JWT with Bearer into field",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        BearerFormat = "JWT",
+                        Scheme = "Bearer"
+                    });
+                    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer"
+                                }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -73,6 +122,8 @@ namespace RpcService
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Server.API v1"));
             }
             else
             {
@@ -81,16 +132,37 @@ namespace RpcService
                 app.UseHsts();
             }
 
-            app.UseRouting();
+            app.UseExceptionHandler(
+                builder =>
+                {
+                    builder.Run(
+                        async context =>
+                        {
+                            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                            context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+                            var error = context.Features.Get<IExceptionHandlerFeature>();
+                            if (error != null)
+                            {
+                                context.Response.AddApplicationError(error.Error.Message);
+                                await context.Response.WriteAsync(error.Error.Message).ConfigureAwait(false);
+                            }
+                        });
+                });
+
+            app.UseStaticFiles();
+
+            app.UseCors();
+
             app.UseAuthentication();
+            app.UseRouting();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapMagicOnionService();
+                endpoints.MapControllers();
             });
-
-            AddSwaggerOnDevOnly(app);
 
             InitStartup(app);
         }
@@ -201,7 +273,7 @@ namespace RpcService
             }
         }
 
-        private static async void InitStartup(IApplicationBuilder app)
+        private static void InitStartup(IApplicationBuilder app)
         {
             using IServiceScope scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
             InitializeDatabase(scope);

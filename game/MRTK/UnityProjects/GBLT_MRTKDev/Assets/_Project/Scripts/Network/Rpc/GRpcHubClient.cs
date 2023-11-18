@@ -63,7 +63,7 @@ namespace Core.Network
         private void CheckNetworkSetting()
         {
             if (_channel == null || !_channel.IsConnected)
-                _channel = GrpcChannelx.ForAddress(_endPointSwitcher.ApiEndPoint);
+                _channel = GrpcChannelx.ForAddress(_endPointSwitcher.HubEndpoint);
         }
 
         private bool GetClientHub(Type key, out IStreamingHubMarker value)

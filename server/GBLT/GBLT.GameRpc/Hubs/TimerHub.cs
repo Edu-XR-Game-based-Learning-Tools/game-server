@@ -1,4 +1,5 @@
 ﻿using Grpc.Core;
+using MagicOnion;
 using MagicOnion.Server.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Shared.Network;
@@ -6,7 +7,6 @@ using System.Security.Claims;
 
 namespace RpcService.Hub
 {
-    [Authorize]
     public class TimerHub : StreamingHubBase<ITimerHub, ITimerHubReceiver>, ITimerHub
     {
         private Task _timerLoopTask;
@@ -30,6 +30,15 @@ namespace RpcService.Hub
                     BroadcastToSelf(_group).OnTick($"UserId={userPrincipal.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value}; Name={userPrincipal.Identity?.Name}");
                 }
             });
+        }
+
+        // `UnaryResult<T>` allows the method to be treated as `async` method.
+        public async Task<int> SumAsync(int x, int y)
+        {
+            Console.WriteLine($"Received:{x}, {y} {DateTime.Now}");
+            await Task.Delay(1000);
+            Console.WriteLine($"Task.Delay(1000) {DateTime.Now}");
+            return x + y;
         }
 
         protected override ValueTask OnDisconnected()

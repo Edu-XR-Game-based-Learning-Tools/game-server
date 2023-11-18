@@ -32,8 +32,8 @@ namespace Core.Framework
         {
             UnityEngine.Debug.Log($"Addressable url: {EnvSetting.AddressableProdUrl}");
 
-            await _gameStore.GetOrCreateModule<IDummy, DummyModel>(
-                "", ViewName.Unity, ModuleName.Dummy);
+            await _gameStore.GetOrCreateModel<IDummy, DummyModel>(
+                moduleName: ModuleName.Dummy);
         }
 
         public void Out()
