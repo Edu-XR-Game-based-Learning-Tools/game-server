@@ -16,12 +16,15 @@ namespace Shared
         public const string INVALID_SESSION = "Your session is invalid. Please sign in again.";
         public const string INVALID_PASSWORD = "Invalid Password!";
         public const string QUIZZES_NOT_TEACHER_CREATE = "You are not teacher. Can't create quizzes game session.";
+        public const string ROOM_UNAVAILABLE = "Unavailable Room!";
         public const string QUIZZES_UNAVAILABLE = "Unavailable Quizzes Game!";
 
         // Room
         public const string INVALID_AMOUNT = "The capacity should be between 24 and 48.";
 
         public const string FULL_AMOUNT = "The room is FULL!";
+
+        public const int QUIZZES_PREVIEW_QUESTION_SECS = 4;
 
         public static class PrefabKey
         {

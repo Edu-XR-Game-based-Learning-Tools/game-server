@@ -22,6 +22,7 @@ namespace Shared.Network
         public string RoomId { get; set; }
         public QuizzesStatus QuizzesStatus { get; set; } = QuizzesStatus.Pending;
         public int CurrentQuestionIdx { get; set; }
+        public System.DateTime CurrentQuestionStartTime { get; set; }
     }
 
     [System.Serializable]

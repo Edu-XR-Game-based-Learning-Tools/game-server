@@ -2,6 +2,7 @@
 using Core.Network;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
+using Models;
 using Shared.Extension;
 using System;
 using System.Threading.Tasks;
@@ -132,7 +133,8 @@ namespace Shared.Network
                 self = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
 
             _userDataController.ServerData.RoomStatus.InGameStatus = status;
-            _userDataController.ServerData.RoomStatus.InGameStatus.Self = self ?? status.Self;
+            if (_userDataController.ServerData.IsInGame && status.Self != null)
+                _userDataController.ServerData.RoomStatus.InGameStatus.Self = self.QuizzesConnectionId == status.Self.QuizzesConnectionId ? status.Self : self;
         }
 
         public void OnJoin(QuizzesStatusResponse status, QuizzesUserData user)
@@ -143,13 +145,13 @@ namespace Shared.Network
 
         public void OnLeave(QuizzesStatusResponse status, QuizzesUserData user)
         {
+            if (user.IsHost && user.QuizzesConnectionId != _userDataController.ServerData.RoomStatus.InGameStatus.Self.QuizzesConnectionId)
+            {
+                _ = LeaveAsync();
+                return;
+            }
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnLeaveQuizzes(user);
-            QuizzesUserData self = null;
-            if (_userDataController.ServerData.RoomStatus.InGameStatus != null)
-                self = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
-            bool isYou = _userDataController.ServerData.RoomStatus.InGameStatus.Self.Index == user.Index;
-            _userDataController.ServerData.RoomStatus.InGameStatus = isYou ? null : status;
-            if (!isYou) _userDataController.ServerData.RoomStatus.InGameStatus.Self = self ?? status.Self;
         }
 
         #region Only Host
@@ -164,6 +166,7 @@ namespace Shared.Network
         public void OnStart(QuizzesStatusResponse status)
         {
             UpdateStatusExceptSelf(status);
+            if (_userDataController.ServerData.IsInGame) _userDataController.ServerData.RoomStatus.InGameStatus.RefreshSelfDataWithList();
             _virtualRoomPresenter.OnStartQuizzes();
         }
 
@@ -175,6 +178,7 @@ namespace Shared.Network
         public void OnEndQuestion(QuizzesStatusResponse status)
         {
             UpdateStatusExceptSelf(status);
+            if (_userDataController.ServerData.IsInGame) _userDataController.ServerData.RoomStatus.InGameStatus.RefreshSelfDataWithList();
             _virtualRoomPresenter.OnEndQuestionQuizzes();
         }
 
@@ -187,11 +191,13 @@ namespace Shared.Network
         public void OnEndQuiz(QuizzesStatusResponse status)
         {
             UpdateStatusExceptSelf(status);
+            if (_userDataController.ServerData.IsInGame) _userDataController.ServerData.RoomStatus.InGameStatus.RefreshSelfDataWithList();
             _virtualRoomPresenter.OnEndQuizQuizzes();
         }
 
         public void OnEndSession()
         {
+            if (_userDataController.ServerData.IsInGame) _userDataController.ServerData.RoomStatus.InGameStatus.RefreshSelfDataWithList();
             _virtualRoomPresenter.OnEndSessionQuizzes();
         }
 

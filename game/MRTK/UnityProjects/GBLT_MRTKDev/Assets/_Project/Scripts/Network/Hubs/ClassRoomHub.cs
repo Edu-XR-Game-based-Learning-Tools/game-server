@@ -124,30 +124,32 @@ namespace Shared.Network
 
         #region Receivers of message from server.
 
-        public void OnJoin(RoomStatusResponse status, PublicUserData user)
+        private void UpdateStatusExceptSelf(RoomStatusResponse status)
         {
-            Debug.Log("Join User:" + user.Name);
-
             PrivateUserData self = null;
             if (_userDataController.ServerData.RoomStatus.RoomStatus != null)
                 self = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
 
             _userDataController.ServerData.RoomStatus.RoomStatus = status;
-            _userDataController.ServerData.RoomStatus.RoomStatus.Self = self ?? status.Self;
+            if (_userDataController.ServerData.IsInRoom && status.Self != null)
+                _userDataController.ServerData.RoomStatus.RoomStatus.Self = self.ConnectionId == status.Self.ConnectionId ? status.Self : self;
+        }
+
+        public void OnJoin(RoomStatusResponse status, PublicUserData user)
+        {
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnJoin(user);
         }
 
         public void OnLeave(RoomStatusResponse status, PublicUserData user)
         {
-            Debug.Log("Leave User:" + user.Name);
-
+            if (user.IsHost && user.ConnectionId != _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId)
+            {
+                _ = LeaveAsync();
+                return;
+            }
+            UpdateStatusExceptSelf(status);
             _virtualRoomPresenter.OnLeave(user);
-            PrivateUserData self = null;
-            if (_userDataController.ServerData.RoomStatus.RoomStatus != null)
-                self = _userDataController.ServerData.RoomStatus.RoomStatus.Self;
-            bool isYou = _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index;
-            _userDataController.ServerData.RoomStatus.RoomStatus = isYou ? null : status;
-            if (!isYou) _userDataController.ServerData.RoomStatus.RoomStatus.Self = self ?? status.Self;
         }
 
         public void OnRoomTick(VirtualRoomTickResponse response)
@@ -171,6 +173,8 @@ namespace Shared.Network
             {
                 QuizzesStatusResponse response = await _quizzesHub.JoinAsync(data.JoinQuizzesData);
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
+                _virtualRoomPresenter.OnSelfJoinQuizzes();
 
                 _gameStore.RemoveCurrentModel();
                 await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(

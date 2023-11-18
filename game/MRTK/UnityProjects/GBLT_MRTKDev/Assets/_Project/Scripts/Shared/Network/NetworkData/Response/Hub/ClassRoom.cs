@@ -31,7 +31,7 @@ namespace Shared.Network
         public PrivateUserData Self { get; set; }
         public PublicUserData[] AllInRoom { get; set; }
         public PublicUserData[] Students => AllInRoom.WhereNot((ele) => ele.IsHost).ToArray();
-        public PublicUserData[] Others => AllInRoom.WhereNot((ele) => ele.Index == Self.Index).ToArray();
+        public PublicUserData[] Others => AllInRoom.WhereNot((ele) => ele.ConnectionId == Self.ConnectionId).ToArray();
         public int Amount => AllInRoom.Length - 1;
     }
 
@@ -39,8 +39,7 @@ namespace Shared.Network
     [MessagePackObject(true)]
     public class RoomStatusResponse : GeneralRoomStatusResponse
     {
-        public int MaxAmount { get; set; }
-        public string Password { get; set; }
+        public JoinClassRoomData JoinClassRoomData { get; set; }
     }
 
     [System.Serializable]

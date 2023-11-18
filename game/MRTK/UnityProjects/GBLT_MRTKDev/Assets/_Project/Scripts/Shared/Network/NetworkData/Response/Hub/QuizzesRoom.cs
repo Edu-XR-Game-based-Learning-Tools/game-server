@@ -1,5 +1,6 @@
 ﻿using MessagePack;
 using Shared.Extension;
+using System;
 using System.Linq;
 
 namespace Shared.Network
@@ -16,7 +17,14 @@ namespace Shared.Network
         public bool IsHost => Index == -1;
         public int? AnswerIdx { get; set; } = null;
         public int AnswerMilliTimeFromStart { get; set; }
-        public bool IsConnected { get; set; } = false;
+
+        public void ResetPlayData()
+        {
+            Score = 0;
+            Rank = 0;
+            AnswerIdx = null;
+            AnswerMilliTimeFromStart = 0;
+        }
     }
 
     [System.Serializable]
@@ -27,9 +35,23 @@ namespace Shared.Network
         public QuizzesUserData Self { get; set; }
         public QuizzesUserData[] AllInRoom { get; set; }
         public QuizzesUserData[] Students => AllInRoom.WhereNot((ele) => ele.UserData.IsHost).ToArray();
-        public QuizzesUserData[] Others => AllInRoom.WhereNot((ele) => ele.Index == Self.Index).ToArray();
+        public QuizzesUserData[] Others => AllInRoom.WhereNot((ele) => ele.QuizzesConnectionId == Self.QuizzesConnectionId).ToArray();
         public int Amount => AllInRoom.Length - 1;
         public JoinQuizzesData JoinQuizzesData { get; set; }
         public QuizCollectionDto QuizCollection { get; set; }
+
+        public void ResetQuizzesSessionData()
+        {
+            JoinQuizzesData.QuizzesStatus = QuizzesStatus.Pending;
+            JoinQuizzesData.CurrentQuestionIdx = 0;
+            JoinQuizzesData.CurrentQuestionStartTime = default;
+        }
+
+        public void RefreshSelfDataWithList()
+        {
+            if (Self == null || AllInRoom == null) return;
+            var lst = AllInRoom.Where(ele => ele.QuizzesConnectionId == Self.QuizzesConnectionId);
+            Self = lst.FirstOrDefault();
+        }
     }
 }

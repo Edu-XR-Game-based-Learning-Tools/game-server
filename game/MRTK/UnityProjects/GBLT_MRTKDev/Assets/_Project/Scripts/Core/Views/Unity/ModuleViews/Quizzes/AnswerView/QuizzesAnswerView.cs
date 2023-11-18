@@ -49,7 +49,6 @@ namespace Core.View
                 }
 
                 Init();
-                RegisterEvents();
             }
 
             private void EnableOption(bool[] options = null)
@@ -63,14 +62,17 @@ namespace Core.View
                 }
             }
 
-            private void Init()
+            public override void Init()
             {
                 _questionTxt.text = "Question?";
                 EnableOption();
+                base.Init();
             }
 
             public override void RegisterEvents()
             {
+                base.RegisterEvents();
+
                 for (int idx = 0; idx < _optionBtns.Length; idx++)
                 {
                     int index = idx;
@@ -108,8 +110,8 @@ namespace Core.View
         public class ScoreView : SubView
         {
             [SerializeField][DebugOnly] private TextMeshProUGUI _resultTxt;
-            [SerializeField][DebugOnly] private Image _correctImg;
-            [SerializeField][DebugOnly] private Image _incorrectImg;
+            [SerializeField][DebugOnly] private Transform _correctImg;
+            [SerializeField][DebugOnly] private Transform _incorrectImg;
             [SerializeField][DebugOnly] private Transform _scoreContainer;
 
             protected UserDataController _userDataController;
@@ -119,12 +121,20 @@ namespace Core.View
                 _userDataController = container.Resolve<IUserDataController>() as UserDataController;
 
                 _resultTxt = transform.Find("Layout/Content/Result_Txt").GetComponent<TextMeshProUGUI>();
-                _correctImg = transform.Find("Layout/Content/Icon/Incorrect").GetComponent<Image>();
-                _incorrectImg = transform.Find("Layout/Content/Icon/Correct").GetComponent<Image>();
+                _correctImg = transform.Find("Layout/Content/Icon/Correct");
+                _incorrectImg = transform.Find("Layout/Content/Icon/Incorrect");
                 _scoreContainer = transform.Find("Layout/Content/Score");
+
+                Init();
             }
 
             private float _lastScore = 0f;
+
+            public void Init()
+            {
+                _lastScore = 0;
+            }
+
             public void UpdateContent()
             {
                 QuizzesUserData data = _userDataController.ServerData.RoomStatus.InGameStatus.Self;
@@ -135,7 +145,7 @@ namespace Core.View
                 _incorrectImg.SetActive(!(changedScore > 0));
 
                 _scoreContainer.SetActive(changedScore > 0);
-                _incorrectImg.GetComponentInChildren<TextMeshProUGUI>().text = $"+ {data.Score - _lastScore}";
+                _scoreContainer.GetComponentInChildren<TextMeshProUGUI>().text = $"+ {changedScore}";
 
                 _lastScore = data.Score;
             }
@@ -215,8 +225,10 @@ namespace Core.View
 
         public async UniTask SetupQuestion()
         {
+            _answerView.Init();
             QuizzesStatusResponse status = _userDataController.ServerData.RoomStatus.InGameStatus;
             int questionIdx = status.JoinQuizzesData.CurrentQuestionIdx;
+            if (questionIdx >= status.QuizCollection.Quizzes.Length) return;
             _ = _answerView.UpdateContent(status.QuizCollection.Quizzes[questionIdx]);
             _object3DContainer.Find("Mesh").GetComponent<MeshFilter>().sharedMesh = await MeshFromURL.FetchModel(status.QuizCollection.Quizzes[questionIdx].Model);
         }
@@ -225,6 +237,7 @@ namespace Core.View
 
         public async void OnStart()
         {
+            _scoreView.Init();
             await SetupQuestion();
 
             transform.SetActive(true);

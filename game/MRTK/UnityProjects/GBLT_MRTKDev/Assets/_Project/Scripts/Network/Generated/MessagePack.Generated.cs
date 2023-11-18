@@ -1701,6 +1701,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_QuizzesStatus() => new byte[1 + 13] { 173, 81, 117, 105, 122, 122, 101, 115, 83, 116, 97, 116, 117, 115 };
         // CurrentQuestionIdx
         private static global::System.ReadOnlySpan<byte> GetSpan_CurrentQuestionIdx() => new byte[1 + 18] { 178, 67, 117, 114, 114, 101, 110, 116, 81, 117, 101, 115, 116, 105, 111, 110, 73, 100, 120 };
+        // CurrentQuestionStartTime
+        private static global::System.ReadOnlySpan<byte> GetSpan_CurrentQuestionStartTime() => new byte[1 + 24] { 184, 67, 117, 114, 114, 101, 110, 116, 81, 117, 101, 115, 116, 105, 111, 110, 83, 116, 97, 114, 116, 84, 105, 109, 101 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.JoinQuizzesData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -1711,7 +1713,7 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(4);
+            writer.WriteMapHeader(5);
             writer.WriteRaw(GetSpan_UserData());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PrivateUserData>(formatterResolver).Serialize(ref writer, value.UserData, options);
             writer.WriteRaw(GetSpan_RoomId());
@@ -1720,6 +1722,8 @@ namespace MessagePack.Formatters.Shared.Network
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.QuizzesStatus>(formatterResolver).Serialize(ref writer, value.QuizzesStatus, options);
             writer.WriteRaw(GetSpan_CurrentQuestionIdx());
             writer.Write(value.CurrentQuestionIdx);
+            writer.WriteRaw(GetSpan_CurrentQuestionStartTime());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.DateTime>(formatterResolver).Serialize(ref writer, value.CurrentQuestionStartTime, options);
         }
 
         public global::Shared.Network.JoinQuizzesData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -1762,6 +1766,11 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_CurrentQuestionIdx().Slice(1))) { goto FAIL; }
 
                         ____result.CurrentQuestionIdx = reader.ReadInt32();
+                        continue;
+                    case 24:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_CurrentQuestionStartTime().Slice(1))) { goto FAIL; }
+
+                        ____result.CurrentQuestionStartTime = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.DateTime>(formatterResolver).Deserialize(ref reader, options);
                         continue;
 
                 }
@@ -2749,8 +2758,6 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_AnswerIdx() => new byte[1 + 9] { 169, 65, 110, 115, 119, 101, 114, 73, 100, 120 };
         // AnswerMilliTimeFromStart
         private static global::System.ReadOnlySpan<byte> GetSpan_AnswerMilliTimeFromStart() => new byte[1 + 24] { 184, 65, 110, 115, 119, 101, 114, 77, 105, 108, 108, 105, 84, 105, 109, 101, 70, 114, 111, 109, 83, 116, 97, 114, 116 };
-        // IsConnected
-        private static global::System.ReadOnlySpan<byte> GetSpan_IsConnected() => new byte[1 + 11] { 171, 73, 115, 67, 111, 110, 110, 101, 99, 116, 101, 100 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.QuizzesUserData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -2761,7 +2768,7 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(9);
+            writer.WriteMapHeader(8);
             writer.WriteRaw(GetSpan_UserData());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData>(formatterResolver).Serialize(ref writer, value.UserData, options);
             writer.WriteRaw(GetSpan_QuizzesConnectionId());
@@ -2778,8 +2785,6 @@ namespace MessagePack.Formatters.Shared.Network
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<int?>(formatterResolver).Serialize(ref writer, value.AnswerIdx, options);
             writer.WriteRaw(GetSpan_AnswerMilliTimeFromStart());
             writer.Write(value.AnswerMilliTimeFromStart);
-            writer.WriteRaw(GetSpan_IsConnected());
-            writer.Write(value.IsConnected);
         }
 
         public global::Shared.Network.QuizzesUserData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -2843,11 +2848,6 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_AnswerMilliTimeFromStart().Slice(1))) { goto FAIL; }
 
                         ____result.AnswerMilliTimeFromStart = reader.ReadInt32();
-                        continue;
-                    case 11:
-                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_IsConnected().Slice(1))) { goto FAIL; }
-
-                        ____result.IsConnected = reader.ReadBoolean();
                         continue;
 
                 }
@@ -2960,10 +2960,8 @@ namespace MessagePack.Formatters.Shared.Network
 
     public sealed class RoomStatusResponseFormatter : global::MessagePack.Formatters.IMessagePackFormatter<global::Shared.Network.RoomStatusResponse>
     {
-        // MaxAmount
-        private static global::System.ReadOnlySpan<byte> GetSpan_MaxAmount() => new byte[1 + 9] { 169, 77, 97, 120, 65, 109, 111, 117, 110, 116 };
-        // Password
-        private static global::System.ReadOnlySpan<byte> GetSpan_Password() => new byte[1 + 8] { 168, 80, 97, 115, 115, 119, 111, 114, 100 };
+        // JoinClassRoomData
+        private static global::System.ReadOnlySpan<byte> GetSpan_JoinClassRoomData() => new byte[1 + 17] { 177, 74, 111, 105, 110, 67, 108, 97, 115, 115, 82, 111, 111, 109, 68, 97, 116, 97 };
         // Id
         private static global::System.ReadOnlySpan<byte> GetSpan_Id() => new byte[1 + 2] { 162, 73, 100 };
         // Self
@@ -2990,11 +2988,9 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(10);
-            writer.WriteRaw(GetSpan_MaxAmount());
-            writer.Write(value.MaxAmount);
-            writer.WriteRaw(GetSpan_Password());
-            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Password, options);
+            writer.WriteMapHeader(9);
+            writer.WriteRaw(GetSpan_JoinClassRoomData());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.JoinClassRoomData>(formatterResolver).Serialize(ref writer, value.JoinClassRoomData, options);
             writer.WriteRaw(GetSpan_Id());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Id, options);
             writer.WriteRaw(GetSpan_Self());
@@ -3034,34 +3030,11 @@ namespace MessagePack.Formatters.Shared.Network
                     FAIL:
                       reader.Skip();
                       continue;
-                    case 9:
-                        switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
-                        {
-                            default: goto FAIL;
-                            case 7959390431487746381UL:
-                                if (stringKey[0] != 116) { goto FAIL; }
+                    case 17:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_JoinClassRoomData().Slice(1))) { goto FAIL; }
 
-                                ____result.MaxAmount = reader.ReadInt32();
-                                continue;
-
-                            case 8029727294256606273UL:
-                                if (stringKey[0] != 109) { goto FAIL; }
-
-                                ____result.AllInRoom = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Deserialize(ref reader, options);
-                                continue;
-
-                        }
-                    case 8:
-                        switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
-                        {
-                            default: goto FAIL;
-                            case 7237970109966541136UL:
-                                ____result.Password = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
-                                continue;
-                            case 8319395793416320083UL:
-                                reader.Skip();
-                                continue;
-                        }
+                        ____result.JoinClassRoomData = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.JoinClassRoomData>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
                     case 2:
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 25673UL) { goto FAIL; }
 
@@ -3071,6 +3044,16 @@ namespace MessagePack.Formatters.Shared.Network
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 1718379859UL) { goto FAIL; }
 
                         ____result.Self = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PrivateUserData>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
+                    case 9:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_AllInRoom().Slice(1))) { goto FAIL; }
+
+                        ____result.AllInRoom = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.PublicUserData[]>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
+                    case 8:
+                        if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 8319395793416320083UL) { goto FAIL; }
+
+                        reader.Skip();
                         continue;
                     case 6:
                         switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))

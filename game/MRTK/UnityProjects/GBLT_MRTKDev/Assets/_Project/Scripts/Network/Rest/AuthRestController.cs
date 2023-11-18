@@ -48,7 +48,7 @@ namespace Core.Network
         {
             bool isDoneRequest = false;
             AuthenticationData data = null;
-            RestClient.Post($"{_endPointSwitcher.ApiEndPoint}/api/auth/register", request).Then(response =>
+            RestClient.Post($"{_endPointSwitcher.ApiEndPoint}/api/auth/register", JsonConvert.SerializeObject(request)).Then(response =>
             {
                 data = JsonConvert.DeserializeObject<AuthenticationData>(response.Text);
                 isDoneRequest = true;
@@ -66,7 +66,7 @@ namespace Core.Network
             {
                 Method = "POST",
                 Uri = $"{_endPointSwitcher.ApiEndPoint}/api/auth/refreshToken",
-                Body = request,
+                Body = JsonConvert.SerializeObject(request),
             };
             RestClient.Request(requestHelper).Then(response =>
             {

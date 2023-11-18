@@ -69,10 +69,10 @@ namespace Core.View
                 (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
                     moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
             });
-            _openLastScreenBtn.OnClicked.AddListener(() =>
-            {
-                _gameStore.OpenLastHiddenModule();
-            });
+            //_openLastScreenBtn.OnClicked.AddListener(() =>
+            //{
+            //    _gameStore.OpenLastHiddenModule();
+            //});
 
 
             _shareToggleCollection.OnToggleSelected.AddListener((toggleSelectedIndex) =>
@@ -96,7 +96,7 @@ namespace Core.View
             bool isInGameView = _userDataController.ServerData.IsInGame;
             _roomStatusBtn.SetActive(isInRoomView);
             _gameStatusBtn.SetActive(isInRoomView && isInGameView);
-            _openLastScreenBtn.SetActive(_gameStore.LastHiddenModule != null);
+            //_openLastScreenBtn.SetActive(_gameStore.LastHiddenModule != null);
             _shareToggleCollection.transform.GetChild(0).SetActive(isInRoomView);
             _shareToggleCollection.transform.GetChild(1).SetActive(isInGameView && new QuizzesStatus[] { QuizzesStatus.InProgress, QuizzesStatus.End }.Contains(_userDataController.ServerData.RoomStatus.InGameStatus.JoinQuizzesData.QuizzesStatus));
         }

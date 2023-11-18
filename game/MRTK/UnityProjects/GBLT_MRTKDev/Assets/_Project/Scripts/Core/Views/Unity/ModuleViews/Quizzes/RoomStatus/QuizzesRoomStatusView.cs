@@ -107,6 +107,14 @@ namespace Core.View
         [DebugOnly] public Transform RootContent;
         [SerializeField][DebugOnly] private SelectQuizView _selectQuizView;
 
+        [SerializeField][DebugOnly] bool _isFirstCreate = true;
+        private void OnEnable()
+        {
+            if (!_isFirstCreate)
+                Refresh();
+            _isFirstCreate = false;
+        }
+
         [Inject]
         public void Init(
             GameStore gameStore,
@@ -175,11 +183,6 @@ namespace Core.View
                 {
                     _showLoadingPublisher.Publish(new ShowLoadingSignal());
                     await _quizzesHub.LeaveAsync();
-
-                    _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
-                    (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
-                        moduleName: ModuleName.RoomStatus)).Refresh();
-
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 }, noAction: (_, _) => { }));
             });

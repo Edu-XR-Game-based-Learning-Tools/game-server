@@ -128,7 +128,7 @@ namespace Core.View
 
         public override void Destroy()
         {
-            if (_unityGo.gameObject)
+            if (_unityGo && _unityGo.gameObject)
                 GameSingleton.Instance.StartCoroutine(CoDestroy());
         }
 

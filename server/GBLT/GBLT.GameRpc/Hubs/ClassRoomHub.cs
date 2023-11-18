@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using Shared;
 using Shared.Extension;
 using Shared.Network;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 
@@ -106,6 +107,18 @@ namespace RpcService.Hub
             return $"ClassRoom/{roomId}";
         }
 
+        private async Task<RoomStatusResponse> GetRoomDataFromCache(string roomId = null)
+        {
+            if (roomId == null && _room == null) return null;
+            var status = await _redisDataService.GetCacheAsync<RoomStatusResponse>(GetRoomCacheKey(roomId ?? _room.GroupName));
+            return status;
+        }
+
+        private async Task SaveRoomDataToCache(RoomStatusResponse status)
+        {
+            await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(status.JoinClassRoomData.RoomId), status);
+        }
+
         #region Join Room
 
         private async Task<GeneralResponse> ValidateCreateRoom(JoinClassRoomData data)
@@ -120,52 +133,73 @@ namespace RpcService.Hub
             return null;
         }
 
-        private GeneralResponse ValidateJoinRoom(JoinClassRoomData data)
+        private static GeneralResponse ValidateJoinRoom(JoinClassRoomData data, RoomStatusResponse status)
         {
-            if (_storage != null && _storage.AllValues.Count - 1 > data.Amount)
+            if (status == null || status.JoinClassRoomData == null) return new RoomStatusResponse { Success = false, Message = Defines.ROOM_UNAVAILABLE };
+
+            if (status.AllInRoom.Length - 1 > status.JoinClassRoomData.Amount)
                 return new RoomStatusResponse { Success = false, Message = Defines.FULL_AMOUNT };
 
-            if (data.Password != data.Password)
-                return new RoomStatusResponse { Success = false, Message = Defines.INVALID_PASSWORD };
+            if (!status.JoinClassRoomData.Password.IsNullOrEmpty() && data.Password != status.JoinClassRoomData.Password)
+                return new RoomStatusResponse { Success = false, JoinClassRoomData = status.JoinClassRoomData, Message = Defines.INVALID_PASSWORD };
 
             return null;
+        }
+
+        private async Task<RoomStatusResponse> TryCreateRoom(JoinClassRoomData data)
+        {
+            if (!data.RoomId.IsNullOrEmpty()) return null;
+
+            try
+            {
+                RoomStatusResponse validateMsg = (RoomStatusResponse)await ValidateCreateRoom(data);
+                if (validateMsg != null) return validateMsg;
+
+                data.RoomId = GenerateRoomId();
+                _roomSet.Add(data.RoomId);
+
+                _self.Index = -1;
+                (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
+
+                RoomStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinClassRoomData = data };
+                BroadcastExceptSelf(_room).OnJoin(status, _self);
+                await SaveRoomDataToCache(status);
+                return status;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
         }
 
         public async Task<RoomStatusResponse> JoinAsync(JoinClassRoomData data)
         {
             _self = new() { ConnectionId = ConnectionId, Name = data.UserName.IsNullOrEmpty() ? "Name" : data.UserName };
-            RoomStatusResponse validateMsg;
+
+            var response = await TryCreateRoom(data);
+            if (response != null) return response;
 
             try
             {
-                bool isHost = false;
-                if (data.RoomId.IsNullOrEmpty())
-                {
-                    validateMsg = (RoomStatusResponse)await ValidateCreateRoom(data);
-                    if (validateMsg != null) return validateMsg;
-
-                    data.RoomId = GenerateRoomId();
-                    _roomSet.Add(data.RoomId);
-                    await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(data.RoomId), data);
-                    isHost = true;
-                }
-
-                var joinData = await _redisDataService.GetCacheAsync<JoinClassRoomData>(GetRoomCacheKey(data.RoomId));
-                validateMsg = (RoomStatusResponse)ValidateJoinRoom(joinData);
+                RoomStatusResponse status = await GetRoomDataFromCache(data.RoomId);
+                RoomStatusResponse validateMsg = (RoomStatusResponse)ValidateJoinRoom(data, status);
                 if (validateMsg != null) return validateMsg;
 
-                (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
-                var allIndexesInRoom = _storage.AllValues.Select(user => user.Index).OrderBy(index => index);
+                var allIndexesInRoom = status.AllInRoom.Select(user => user.Index).OrderBy(index => index);
                 int index = -1;
                 for (int idx = 0; idx < allIndexesInRoom.Count(); idx++)
                 {
                     if (index != allIndexesInRoom.ElementAt(idx)) break;
                     index++;
                 }
-                _self.Index = isHost ? -1 : index; // -1 for not count teacher, teacher seat: index = -1
+                _self.Index = index; // -1 for not count teacher, teacher seat: index = -1
+                (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
 
-                RoomStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
+                status.Self = _self;
+                status.AllInRoom = _storage.AllValues.ToArray();
                 BroadcastExceptSelf(_room).OnJoin(status, _self);
+                await SaveRoomDataToCache(status);
                 return status;
             }
             catch (Exception ex)
@@ -177,30 +211,51 @@ namespace RpcService.Hub
 
         #endregion Join Room
 
+        private async Task<bool> RemoveContextIfNotExistRoomData(RoomStatusResponse status)
+        {
+            if (_room == null) return true;
+            status ??= await GetRoomDataFromCache();
+            if (status == null)
+            {
+                BroadcastToSelf(_room).OnLeave(status, _self);
+                await _room.RemoveAsync(Context);
+                return true;
+            }
+            return false;
+        }
+
         public async Task LeaveAsync()
         {
             try
             {
-                var joinData = await _redisDataService.GetCacheAsync<JoinClassRoomData>(GetRoomCacheKey(_room.GroupName));
+                RoomStatusResponse status = null;
                 if (_self.IsHost)
                 {
                     _roomSet.Remove(_room.GroupName);
                     await _redisDataService.RemoveCacheAsync(GetRoomCacheKey(_room.GroupName));
                 }
-
-                RoomStatusResponse status = null;
-                if (!_self.IsHost) status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, Password = joinData.Password, MaxAmount = joinData.Amount };
+                else
+                {
+                    status = await GetRoomDataFromCache();
+                    if (await RemoveContextIfNotExistRoomData(status)) return;
+                    status.AllInRoom = _storage.AllValues.WhereNot(ele => ele.ConnectionId == ConnectionId).ToArray();
+                    await SaveRoomDataToCache(status);
+                }
                 Broadcast(_room).OnLeave(status, _self);
 
                 await _room.RemoveAsync(Context);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
         }
 
         public async Task InviteToGame(InviteToGameData data)
         {
-            var quizzesData = await _redisDataService.GetCacheAsync<JoinQuizzesData>(QuizzesHub.GetRoomCacheKey(data.RoomId));
-            data.JoinQuizzesData = quizzesData;
+            var quizzesStatus = await _redisDataService.GetCacheAsync<QuizzesStatusResponse>(QuizzesHub.GetRoomCacheKey(data.RoomId));
+            data.JoinQuizzesData = quizzesStatus.JoinQuizzesData;
             BroadcastExceptSelf(_room).OnInviteToGame(data, _self);
         }
 

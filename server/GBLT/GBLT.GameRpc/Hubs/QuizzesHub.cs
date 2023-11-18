@@ -1,4 +1,5 @@
-﻿using Core.Service;
+﻿using Core.Entity;
+using Core.Service;
 using MagicOnion.Server.Hubs;
 using Microsoft.IdentityModel.Tokens;
 using Shared;
@@ -31,15 +32,16 @@ namespace RpcService.Hub
             return $"Quizzes/{roomId}";
         }
 
-        private async Task<QuizzesStatusResponse> GetGameStatus(string roomId = null)
+        private async Task<QuizzesStatusResponse> GetGameStatusFromCache(string roomId = null)
         {
-            var quizzesStatus = await _redisDataService.GetCacheAsync<QuizzesStatusResponse>(GetRoomCacheKey(roomId ?? _room.GroupName));
-            return quizzesStatus;
+            if (roomId == null && _room == null) return null;
+            var status = await _redisDataService.GetCacheAsync<QuizzesStatusResponse>(GetRoomCacheKey(roomId ?? _room.GroupName));
+            return status;
         }
 
-        private async Task SaveGameStatus(QuizzesStatusResponse gStatus)
+        private async Task SaveGameStatusToCache(QuizzesStatusResponse status)
         {
-            await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(_room.GroupName), gStatus);
+            await _redisDataService.UpdateCacheAsync(GetRoomCacheKey(_room.GroupName), status);
         }
 
         #region Join Room
@@ -57,10 +59,37 @@ namespace RpcService.Hub
 
         private static GeneralResponse ValidateJoinRoom(JoinQuizzesData data)
         {
-            if (data.QuizzesStatus != QuizzesStatus.Pending)
+            if (data == null || data.QuizzesStatus != QuizzesStatus.Pending)
                 return new QuizzesStatusResponse { Success = false, Message = Defines.QUIZZES_UNAVAILABLE };
 
             return null;
+        }
+
+        private async Task<QuizzesStatusResponse> TryCreateRoom(JoinQuizzesData data)
+        {
+            if (!data.RoomId.IsNullOrEmpty()) return null;
+
+            try
+            {
+                QuizzesStatusResponse validateMsg = (QuizzesStatusResponse)await ValidateCreateRoom(data);
+                if (validateMsg != null) return validateMsg;
+
+                data.RoomId = GenerateRoomId();
+                _roomSet.Add(data.RoomId);
+
+                _self.Index = -1;
+                (_room, _storage) = await Group.AddAsync(data.RoomId, _self);
+
+                QuizzesStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinQuizzesData = data };
+                BroadcastExceptSelf(_room).OnJoin(status, _self);
+                await SaveGameStatusToCache(status);
+                return status;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
         }
 
         public async Task<QuizzesStatusResponse> JoinAsync(JoinQuizzesData data)
@@ -70,36 +99,51 @@ namespace RpcService.Hub
                 UserData = data.UserData,
                 QuizzesConnectionId = ConnectionId
             };
-            QuizzesStatusResponse validateMsg;
-            bool isHost = false;
-            if (data.RoomId.IsNullOrEmpty())
+            var response = await TryCreateRoom(data);
+            if (response != null) return response;
+
+            try
             {
-                validateMsg = (QuizzesStatusResponse)await ValidateCreateRoom(data);
+                QuizzesStatusResponse status = await GetGameStatusFromCache(data.RoomId);
+                QuizzesStatusResponse validateMsg = (QuizzesStatusResponse)ValidateJoinRoom(status.JoinQuizzesData);
                 if (validateMsg != null) return validateMsg;
 
-                data.RoomId = GenerateRoomId();
-                _roomSet.Add(data.RoomId);
-                isHost = true;
-            }
+                var allIndexesInRoom = status.AllInRoom.Select(user => user.Index).OrderBy(index => index);
+                int index = -1;
+                for (int idx = 0; idx < allIndexesInRoom.Count(); idx++)
+                {
+                    if (index != allIndexesInRoom.ElementAt(idx)) break;
+                    index++;
+                }
+                _self.Index = index; // -1 for not count teacher, teacher seat: index = -1
+                (_room, _storage) = await Group.AddAsync(data.RoomId, _self);
 
-            QuizzesStatusResponse quizzesStatus = await GetGameStatus(data.RoomId);
-            if (quizzesStatus != null)
+                status.Self = _self;
+                status.AllInRoom = _storage.AllValues.ToArray();
+                BroadcastExceptSelf(_room).OnJoin(status, _self);
+                await SaveGameStatusToCache(status);
+                return status;
+            }
+            catch (Exception ex)
             {
-                validateMsg = (QuizzesStatusResponse)ValidateJoinRoom(quizzesStatus.JoinQuizzesData);
-                if (validateMsg != null) return validateMsg;
+                Console.WriteLine(ex.ToString());
+                throw;
             }
-
-            (_room, _storage) = await Group.AddAsync(data.RoomId, _self);
-            _self.Index = isHost ? -1 : _storage.AllValues.Count - 1; // -1 for not count teacher, teacher seat: index = -1
-
-            QuizzesStatusResponse newGameData = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinQuizzesData = data };
-            await SaveGameStatus(newGameData);
-
-            BroadcastExceptSelf(_room).OnJoin(newGameData, _self);
-            return await GetGameStatus();
         }
 
         #endregion Join Room
+
+        private async Task<bool> RemoveContextIfNotExistRoomStatus(QuizzesStatusResponse status)
+        {
+            if (_room == null) return true;
+            status ??= await GetGameStatusFromCache();
+            if (status == null)
+            {
+                await _room.RemoveAsync(Context);
+                return true;
+            }
+            return false;
+        }
 
         public async Task LeaveAsync()
         {
@@ -113,9 +157,10 @@ namespace RpcService.Hub
                 }
                 else
                 {
-                    var gStatus = await GetGameStatus();
-                    gStatus.AllInRoom.RemoveWhere(ele => ele.QuizzesConnectionId == ConnectionId);
-                    await SaveGameStatus(gStatus);
+                    status = await GetGameStatusFromCache();
+                    if (await RemoveContextIfNotExistRoomStatus(status)) return;
+                    status.AllInRoom = _storage.AllValues.WhereNot(ele => ele.QuizzesConnectionId == ConnectionId).ToArray();
+                    await SaveGameStatusToCache(status);
                 }
                 Broadcast(_room).OnLeave(status, _self);
 
@@ -139,13 +184,16 @@ namespace RpcService.Hub
             // Debug Only: Duration
             foreach (var quiz in data.Quizzes) quiz.Duration = 10;
 
-            var gStatus = await GetGameStatus();
-            gStatus.JoinQuizzesData.CurrentQuestionIdx = 0;
-            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.InProgress;
-            gStatus.QuizCollection = data;
-            await SaveGameStatus(gStatus);
+            QuizzesStatusResponse status = await GetGameStatusFromCache();
+            status.JoinQuizzesData.CurrentQuestionIdx = 0;
+            status.JoinQuizzesData.QuizzesStatus = QuizzesStatus.InProgress;
+            status.QuizCollection = data;
+            foreach (var student in status.AllInRoom)
+                student.ResetPlayData();
+            status.JoinQuizzesData.CurrentQuestionStartTime = DateTime.UtcNow;
 
-            Broadcast(_room).OnStart(gStatus);
+            Broadcast(_room).OnStart(status);
+            await SaveGameStatusToCache(status);
         }
 
         public Task DonePreview()
@@ -157,17 +205,23 @@ namespace RpcService.Hub
         private int _minScoreEachQuestion = 300;
         private int _maxScoreEachQuestion = 1000;
 
-        private void CalculateScoreThisQuestion(QuizzesStatusResponse gStatus)
+        private float CalculateFunction(int duration, int milliTaken)
         {
-            var students = gStatus.Students;
+            // y = -diff/(duration-0.5)*(x-0.5f)+max
+            var diff = _maxScoreEachQuestion - _minScoreEachQuestion;
+            return (float)Math.Floor(Math.Clamp(-diff / (duration - 0.5f) * (milliTaken / 1000 - 0.5f) + _maxScoreEachQuestion, _minScoreEachQuestion, _maxScoreEachQuestion));
+        }
+        private void CalculateScoreThisQuestion(QuizzesStatusResponse status)
+        {
+            var students = status.Students;
             foreach (var student in students)
             {
                 if (student.AnswerIdx == null) continue;
 
-                QuizDto quiz = gStatus.QuizCollection.Quizzes[gStatus.JoinQuizzesData.CurrentQuestionIdx];
+                QuizDto quiz = status.QuizCollection.Quizzes[status.JoinQuizzesData.CurrentQuestionIdx];
                 if (quiz.CorrectIdx != student.AnswerIdx) continue;
 
-                student.Score += Math.Clamp(student.AnswerMilliTimeFromStart / (quiz.Duration * 1000f), _minScoreEachQuestion, _maxScoreEachQuestion);
+                student.Score += CalculateFunction(quiz.Duration, student.AnswerMilliTimeFromStart);
             }
 
             var rankOrder = students
@@ -180,33 +234,36 @@ namespace RpcService.Hub
 
         public async Task EndQuestion()
         {
-            var gStatus = await GetGameStatus();
-            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.End;
-            CalculateScoreThisQuestion(gStatus);
-            await SaveGameStatus(gStatus);
+            var status = await GetGameStatusFromCache();
+            status.JoinQuizzesData.QuizzesStatus = QuizzesStatus.End;
+            CalculateScoreThisQuestion(status);
+            await SaveGameStatusToCache(status);
 
-            Broadcast(_room).OnEndQuestion(gStatus);
+            Broadcast(_room).OnEndQuestion(status);
         }
 
         public async Task NextQuestion()
         {
-            var gStatus = await GetGameStatus();
-            gStatus.JoinQuizzesData.CurrentQuestionIdx++;
-            await SaveGameStatus(gStatus);
+            var status = await GetGameStatusFromCache();
+            status.JoinQuizzesData.CurrentQuestionIdx++;
+            status.JoinQuizzesData.CurrentQuestionStartTime = DateTime.UtcNow.AddSeconds(Defines.QUIZZES_PREVIEW_QUESTION_SECS);
 
-            if (gStatus.JoinQuizzesData.CurrentQuestionIdx == gStatus.QuizCollection.Quizzes.Length)
-                Broadcast(_room).OnEndQuiz(gStatus);
+            if (status.JoinQuizzesData.CurrentQuestionIdx == status.QuizCollection.Quizzes.Length)
+                Broadcast(_room).OnEndQuiz(status);
             else
-                Broadcast(_room).OnNextQuestion(gStatus);
+                Broadcast(_room).OnNextQuestion(status);
+            await SaveGameStatusToCache(status);
         }
 
         public async Task EndSession()
         {
-            var gStatus = await GetGameStatus();
-            gStatus.JoinQuizzesData.QuizzesStatus = QuizzesStatus.Pending;
-            await SaveGameStatus(gStatus);
+            var status = await GetGameStatusFromCache();
+            status.ResetQuizzesSessionData();
+            foreach (var student in status.AllInRoom)
+                student.ResetPlayData();
 
             Broadcast(_room).OnEndSession();
+            await SaveGameStatusToCache(status);
         }
 
         #endregion Host API
@@ -214,11 +271,14 @@ namespace RpcService.Hub
         public async Task Answer(AnswerData data)
         {
             data.UserData = _self;
-            var gStatus = await GetGameStatus();
-            var host = gStatus.AllInRoom.Where(ele => ele.IsHost).First();
-            QuizzesUserData userData = gStatus.AllInRoom.Where(ele => ele.QuizzesConnectionId == _self.QuizzesConnectionId).First();
+            var status = await GetGameStatusFromCache();
+            var host = status.AllInRoom.Where(ele => ele.IsHost).First();
+            QuizzesUserData userData = status.AllInRoom.Where(ele => ele.QuizzesConnectionId == _self.QuizzesConnectionId).First();
             userData.AnswerIdx = data.AnswerIdx;
-            await SaveGameStatus(gStatus);
+            DateTime answerTime = DateTime.UtcNow;
+            TimeSpan diff = answerTime - status.JoinQuizzesData.CurrentQuestionStartTime;
+            userData.AnswerMilliTimeFromStart = (int)Math.Floor(diff.TotalMilliseconds);
+            await SaveGameStatusToCache(status);
 
             BroadcastTo(_room, (Guid)host.QuizzesConnectionId).OnAnswer(data);
         }

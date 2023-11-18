@@ -96,9 +96,9 @@ namespace Core.View
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                         return;
 
-                    await _classRoomHub.InviteToGame(response);
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
-                    _virtualRoomPresenter.OnJoinQuizzes(response.Self);
+                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _classRoomHub.InviteToGame(response);
 
                     _gameStore.HideCurrentModule(ModuleName.RoomStatus);
                     (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
@@ -186,13 +186,15 @@ namespace Core.View
             {
                 for (int idx = 0; idx < _avatarBtns.Length; idx++)
                 {
-                    _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.AvatarPaths[idx]);
+                    var sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.AvatarPaths[idx]);
+                    _avatarBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = sprite;
                     _avatarBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
 
                 for (int idx = 0; idx < _modelBtns.Length; idx++)
                 {
-                    _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.ModelThumbnailPaths[idx]);
+                    var sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(Defines.PrefabKey.ModelThumbnailPaths[idx]);
+                    _modelBtns[idx].transform.Find("Frontplate/AnimatedContent/Icon/UIButtonSpriteIcon").GetComponent<Image>().sprite = sprite;
                     _modelBtns[idx].transform.Find("Backplate").GetComponent<Image>().color = _defaultColor;
                 }
 
@@ -279,6 +281,14 @@ namespace Core.View
         [SerializeField][DebugOnly] private SelectToolView _selectToolView;
         [SerializeField][DebugOnly] private SettingView _settingView;
 
+        [SerializeField][DebugOnly] bool _isFirstCreate = true;
+        private void OnEnable()
+        {
+            if (!_isFirstCreate)
+                Refresh();
+            _isFirstCreate = false;
+        }
+
         [Inject]
         public void Init(
             GameStore gameStore,
@@ -350,11 +360,6 @@ namespace Core.View
                 {
                     _showLoadingPublisher.Publish(new ShowLoadingSignal());
                     await _classRoomHub.LeaveAsync();
-
-                    _gameStore.GState.RemoveModel<RoomStatusModel>();
-                    (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
-                        moduleName: ModuleName.LandingScreen)).Refresh();
-
                     _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 }, noAction: (_, _) => { }));
             });
@@ -426,8 +431,7 @@ namespace Core.View
 
             bool isHost = _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost;
             _selectToolBtn.SetActive(isHost && !isInGame);
-            _editAvatarBtn.SetActive(!isInGame);
-            _settingBtn.SetActive(isHost && !isInGame);
+            _settingBtn.SetActive(isHost);
         }
     }
 }

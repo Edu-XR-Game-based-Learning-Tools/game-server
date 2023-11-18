@@ -6,6 +6,7 @@ using Core.Utility;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using Microsoft.MixedReality.Toolkit.UX;
+using Shared;
 using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
@@ -49,9 +50,6 @@ namespace Core.View
             _rtObject3D = transform.Find($"{prefix}/Visual/RT_3D");
             _imageToggleBtn = transform.Find($"{prefix}/Visual/PreviewToggle/Image_Btn").GetComponent<PressableButton>();
             _3dToggleBtn = transform.Find($"{prefix}/Visual/PreviewToggle/3D_Btn").GetComponent<PressableButton>();
-
-            Init();
-            RegisterEvents();
         }
 
         private void ToggleVisual(bool isImageToggle = true)
@@ -64,8 +62,9 @@ namespace Core.View
             _3dToggleBtn.transform.Find("Backplate").GetComponent<Image>().color = new Color(color.r, color.g, color.b, !_isImageToggle ? 1f : 0);
         }
 
-        private void Init()
+        public virtual void Init()
         {
+            RegisterEvents();
             ToggleVisual();
         }
 
@@ -148,7 +147,6 @@ namespace Core.View
             [SerializeField][DebugOnly] private TextMeshProUGUI _questionTxt;
             [SerializeField][DebugOnly] private Microsoft.MixedReality.Toolkit.UX.Slider _progressSlider;
 
-            [SerializeField] private float _previewDuration = 4f;
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
             public PreviewView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
@@ -163,10 +161,11 @@ namespace Core.View
                 Init();
             }
 
-            public void Init()
+            public override void Init()
             {
                 _questionTxt.text = "Question?";
                 _progressSlider.Value = 0;
+                base.Init();
             }
 
             public async UniTask UpdateContent(QuizDto data)
@@ -175,7 +174,7 @@ namespace Core.View
                 _imageObject2D.sprite = await IMG2Sprite.FetchImageSprite(data.Image);
                 _progressSlider.Value = 0;
 
-                DOTween.To(() => _progressSlider.Value, (value) => _progressSlider.Value = value, 1f, _previewDuration).onComplete = () =>
+                DOTween.To(() => _progressSlider.Value, (value) => _progressSlider.Value = value, 1f, Defines.QUIZZES_PREVIEW_QUESTION_SECS).onComplete = () =>
                 {
                     _ = _quizzesHub.DonePreview();
                 };
@@ -199,8 +198,9 @@ namespace Core.View
 
             [SerializeField][DebugOnly] private Transform[] _optionTransforms;
 
-            [SerializeField] private float _previewDuration = 4f;
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
+
+            private string _answerAmoutPrefix = "Answer: ";
 
             public QuestionView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack, "Countdown/Content/Layout")
             {
@@ -259,18 +259,19 @@ namespace Core.View
                 }
             }
 
-            public void Init()
+            public override void Init()
             {
                 _questionTxt.text = "Question?";
-                _noAnswerTxt.text = "Answer: 0";
+                _noAnswerTxt.text = $"{_answerAmoutPrefix}0";
                 EnableResultOption();
                 EnableOption();
+                base.Init();
             }
 
             private void StartCountdown(int duration)
             {
                 _countdownTxt.text = $"{duration}s";
-                DOTween.To(() => int.Parse(_countdownTxt.text[..^1]), (value) => _countdownTxt.text = $"{value}s", 0, duration + _previewDuration).onComplete = () =>
+                DOTween.To(() => int.Parse(_countdownTxt.text[..^1]), (value) => _countdownTxt.text = $"{value}s", 0, duration + Defines.QUIZZES_PREVIEW_QUESTION_SECS).onComplete = () =>
                 {
                     _ = _quizzesHub.EndQuestion();
                 };
@@ -310,7 +311,7 @@ namespace Core.View
 
             public void IncreaseNoAnswer()
             {
-                _noAnswerTxt.text = $"Answer: {int.Parse(_noAnswerTxt.text.Substring("Answer: ".Length, _noAnswerTxt.text.Length)) + 1}";
+                _noAnswerTxt.text = $"{_answerAmoutPrefix}{int.Parse(_noAnswerTxt.text.Substring(_answerAmoutPrefix.Length, _noAnswerTxt.text.Length - _answerAmoutPrefix.Length)) + 1}";
             }
         }
 
@@ -433,7 +434,10 @@ namespace Core.View
 
         private async UniTask SetupQuestion()
         {
+            _previewView.Init();
+            _questionView.Init();
             QuizzesStatusResponse status = _userDataController.ServerData.RoomStatus.InGameStatus;
+            if (status.JoinQuizzesData.CurrentQuestionIdx >= status.QuizCollection.Quizzes.Length) return;
             QuizDto quiz = status.QuizCollection.Quizzes[status.JoinQuizzesData.CurrentQuestionIdx];
             _headerView.UpdateContent();
             _ = _previewView.UpdateContent(quiz);

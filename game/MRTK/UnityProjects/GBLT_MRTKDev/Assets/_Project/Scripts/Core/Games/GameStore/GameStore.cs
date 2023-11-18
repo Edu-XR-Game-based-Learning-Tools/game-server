@@ -148,7 +148,9 @@ namespace Core.Framework
 
                 if (_lastHideModules.Contains(model.Module.ModuleName))
                 {
-                    model.Module.ViewContext.View.SetActive(true);
+                    if (model.Module.ViewContext.View != null)
+                        model.Module.ViewContext.View.SetActive(true);
+                    else GState.RemoveModel(model);
                     _lastHideModules.Remove(model.Module.ModuleName);
                 }
             }
@@ -259,10 +261,10 @@ namespace Core.Framework
                 if (model.Module.ModuleName == LastHiddenModule && !model.Module.ViewContext.View.activeInHierarchy)
                 {
                     GState.RemoveModel(model);
-                    LastHiddenModule = null;
                     break;
                 }
             }
+            LastHiddenModule = null;
         }
 
         private IModuleContextModel GetRecentModule()

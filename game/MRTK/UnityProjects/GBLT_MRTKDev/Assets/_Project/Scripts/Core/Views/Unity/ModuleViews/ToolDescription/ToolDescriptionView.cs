@@ -18,6 +18,7 @@ namespace Core.View
     {
         private GameStore _gameStore;
         private AudioPoolManager _audioPoolManager;
+        private VirtualRoomPresenter _virtualRoomPresenter;
         private ClassRoomHub _classRoomHub;
         private QuizzesHub _quizzesHub;
         private IUserDataController _userDataController;
@@ -38,6 +39,7 @@ namespace Core.View
         {
             _gameStore = gameStore;
             _audioPoolManager = (AudioPoolManager)container.Resolve<IReadOnlyList<IPoolManager>>().ElementAt((int)PoolName.Audio);
+            _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
             _classRoomHub = container.Resolve<ClassRoomHub>();
             _quizzesHub = container.Resolve<QuizzesHub>();
             _userDataController = container.Resolve<IUserDataController>();
@@ -71,12 +73,12 @@ namespace Core.View
             _openBtn.OnClicked.AddListener(async () =>
             {
                 QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
-                await _classRoomHub.InviteToGame(response);
-
                 if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                     return;
 
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
+                _virtualRoomPresenter.OnSelfJoinQuizzes();
+                await _classRoomHub.InviteToGame(response);
 
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
                 await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
@@ -96,7 +98,7 @@ namespace Core.View
         {
             bool isInRoomView = _userDataController.ServerData.IsInRoom;
             bool isInGameView = _userDataController.ServerData.IsInGame;
-            _openBtn.SetActive(isInRoomView && !isInGameView);
+            _openBtn.SetActive(isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
         }
     }
 }

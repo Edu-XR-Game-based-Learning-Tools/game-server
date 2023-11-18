@@ -49,6 +49,7 @@ namespace Core.Framework
         [SerializeField][DebugOnly] private RenderTexture _quizzesShareRenderTexture;
 
         [SerializeField][DebugOnly] private Material _screenMat;
+        [SerializeField][DebugOnly] private Texture2D _screenTex;
 
         [Inject]
         public void Construct(IObjectResolver container)
@@ -77,8 +78,11 @@ namespace Core.Framework
             _MRTKRig = GameObject.Find("MRTK XR Rig").transform;
             _shareScreenCam = GameObject.Find("MRTK XR Rig/Camera Offset/Main Camera/ShareScreenCam").GetComponent<Camera>();
             _screenRenderTexture = _shareScreenCam.targetTexture;
+            _screenTex = new(_screenRenderTexture.width, _screenRenderTexture.height);
 
             _screenMat = _classRoom.Find("Environment/Projector/Screen/16:9").GetComponent<Renderer>().material;
+            _screenMat.SetColor("_EmissionColor", new Color(0f, 0f, 0f, 1f));
+            _screenMat.SetTexture("_EmissionMap", null);
 
             _classRoom.SetActive(false);
 
@@ -112,7 +116,7 @@ namespace Core.Framework
             if (isSelf)
             {
                 _MRTKRig.position = characterObject.Find("EyeCamPosition").position;
-                _MRTKRig.rotation = characterObject.Find("EyeCamPosition").rotation;
+                _MRTKRig.eulerAngles = characterObject.Find("EyeCamPosition").eulerAngles + Vector3.up * (data.IsHost ? -20f : 180f);
             }
 
             characterObject.Find("Head").ChangeLayersRecursively(isSelf ? "SelfModel" : "Default");
@@ -129,28 +133,30 @@ namespace Core.Framework
             character.Find("Canvas/Flip/Image").GetComponent<Image>().sprite = await ((UserDataController)_userDataController).LocalUserCache.GetSprite(user.AvatarPath);
         }
 
-        private async UniTask UpdateQuizzesModuleUI()
+        private void UpdateQuizzesStatusModuleUI()
         {
             if (_gameStore.GState.HasModel<QuizzesRoomStatusModel>())
             {
-                (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
+                var model = _gameStore.GState.GetModel<QuizzesRoomStatusModel>();
+                if (model.Module.ViewContext.View.activeInHierarchy) model.Refresh();
             }
         }
 
-        private async UniTask UpdateModuleUI()
+        private void UpdateRoomStatusModuleUI()
         {
             if (_gameStore.GState.HasModel<RoomStatusModel>())
             {
-                (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(moduleName: ModuleName.RoomStatus)).Refresh();
+                var model = _gameStore.GState.GetModel<RoomStatusModel>();
+                if (model.Module.ViewContext.View.activeInHierarchy) model.Refresh();
             }
 
-            await UpdateQuizzesModuleUI();
+            UpdateQuizzesStatusModuleUI();
         }
 
         private async UniTask UpdateCharacter(PublicUserData user)
         {
-            await UpdateModuleUI();
-            var character = await SpawnCharacter(user, _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index);
+            UpdateRoomStatusModuleUI();
+            var character = await SpawnCharacter(user, _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId == user.ConnectionId);
             await UpdateCharacterCanvas(user, character);
         }
 
@@ -195,21 +201,28 @@ namespace Core.Framework
 
         public void OnLeave(PublicUserData user)
         {
-            Debug.Log($"OnLeave");
-            DestroyCharacter(user);
-            if (_userDataController.ServerData.RoomStatus.RoomStatus.Self.Index == user.Index)
+            Debug.Log($"OnLeave {user.Index}");
+            if (!_userDataController.ServerData.IsInRoom || _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId == user.ConnectionId)
                 Clean();
             else
-                _ = UpdateModuleUI();
+            {
+                DestroyCharacter(user);
+                UpdateRoomStatusModuleUI();
+            }
         }
 
         #endregion Setup Environment
 
-        public void Clean()
+        public async void Clean()
         {
             foreach (Transform child in _studentCharacters)
                 if (child != null) Destroy(child.gameObject);
             if (_teacherCharacter != null) Destroy(_teacherCharacter.gameObject);
+
+            _gameStore.GState.RemoveModel<RoomStatusModel>();
+            _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
+            (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
+                moduleName: ModuleName.LandingScreen)).Refresh();
 
             _classRoom.SetActive(false);
         }
@@ -219,17 +232,16 @@ namespace Core.Framework
         [SerializeField] bool _isSharingCache = false;
         private Texture2D GetShareTexture()
         {
-            // Debug Only: Sharing
-            _userDataController.ServerData.IsSharingQuizzesGame = _isSharingQuizzesCache;
-            _userDataController.ServerData.IsSharing = _isSharingCache;
-
             if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return null;
 
-            _shareScreenCam.SetActive(_userDataController.ServerData.IsSharing && !_userDataController.ServerData.IsSharingQuizzesGame);
-            _quizzesShareCam.SetActive(_userDataController.ServerData.IsSharingQuizzesGame);
-            if (_userDataController.ServerData.IsSharingQuizzesGame)
+            bool isSharing = _userDataController.ServerData.IsInRoom && _userDataController.ServerData.IsSharing && !_userDataController.ServerData.IsSharingQuizzesGame;
+            bool isSharingQuizzes = _userDataController.ServerData.IsInGame && _userDataController.ServerData.IsSharingQuizzesGame;
+
+            _shareScreenCam.SetActive(isSharing);
+            _quizzesShareCam.SetActive(isSharingQuizzes);
+            if (isSharingQuizzes)
                 return _quizzesShareRenderTexture.ToTexture2D();
-            else if (_userDataController.ServerData.IsSharing)
+            else if (isSharing)
                 return _screenRenderTexture.ToTexture2D();
             else return null;
         }
@@ -241,16 +253,15 @@ namespace Core.Framework
         [SerializeField][DebugOnly] float _delaySharingSyncData;
         private void PublishRoomTickData()
         {
-
             _delaySyncData -= Time.deltaTime;
             if (_delaySyncData > 0)
                 return;
-
             _delaySyncData = _delaySyncDuration;
 
+            var xrCamEuler = _shareScreenCam.transform.parent.eulerAngles;
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(tickData: new VirtualRoomTickData
             {
-                HeadRotation = (_shareScreenCam.transform.parent.eulerAngles + new Vector3(0f, 180f, 0f)).ToVec3D(),
+                HeadRotation = new Vec3D(-xrCamEuler.x, xrCamEuler.y + 180f, xrCamEuler.z),
             }));
         }
 
@@ -259,8 +270,16 @@ namespace Core.Framework
             _delaySharingSyncData -= Time.deltaTime;
             if (_delaySharingSyncData > 0)
                 return;
-
             _delaySharingSyncData = _delaySharingSyncDuration;
+
+            if (_isSharingCache == _userDataController.ServerData.IsSharing && _userDataController.ServerData.IsSharingQuizzesGame == _isSharingQuizzesCache)
+                return;
+
+            if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return;
+
+            _isSharingCache = _userDataController.ServerData.IsSharing;
+            _isSharingQuizzesCache = _userDataController.ServerData.IsSharingQuizzesGame;
+
             var shareTexture = GetShareTexture();
 
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(sharingTickData: new SharingTickData
@@ -269,6 +288,8 @@ namespace Core.Framework
                 IsSharing = _userDataController.ServerData.IsSharing,
                 IsSharingQuizzesGame = _userDataController.ServerData.IsSharingQuizzesGame,
             }));
+
+            if (shareTexture != null) Destroy(shareTexture);
         }
 
         private void PublishTickData()
@@ -303,6 +324,11 @@ namespace Core.Framework
         private void OnDestroy()
         {
             Camera.onPostRender -= OnPostRenderCallback;
+            if (_screenTex != null)
+            {
+                Destroy(_screenTex);
+                _screenTex = null;
+            }
         }
 
         public void OnTransform(PublicUserData user)
@@ -310,7 +336,7 @@ namespace Core.Framework
             Transform userModelParent = GetCharacterParent(user);
             if (userModelParent == null || userModelParent.childCount == 0) return;
 
-            userModelParent.GetChild(0).transform.eulerAngles = user.HeadRotation.ToVector3();
+            userModelParent.GetChild(0).Find("Head").transform.eulerAngles = user.HeadRotation.ToVector3();
         }
 
         public void OnRoomTick(VirtualRoomTickResponse response)
@@ -327,10 +353,9 @@ namespace Core.Framework
                 return;
             }
 
-            Texture2D tex = new(_screenRenderTexture.width, _screenRenderTexture.height);
-            tex.LoadImage(response.Texture);
+            _screenTex.LoadImage(response.Texture);
             _screenMat.SetColor("_EmissionColor", new Color(1f, 1f, 1f, 1f) * 2.75f);
-            _screenMat.SetTexture("_EmissionMap", tex);
+            _screenMat.SetTexture("_EmissionMap", _screenTex);
         }
 
         public async void OnUpdateAvatar(PublicUserData user)
@@ -343,18 +368,18 @@ namespace Core.Framework
         private QuizzesQuestionView _quizzesQuestionView;
         private QuizzesAnswerView _quizzesAnswerView;
 
-        private PrivateUserData _self => _userDataController.ServerData.RoomStatus.RoomStatus.Self;
+        private QuizzesUserData Self => _userDataController.ServerData.RoomStatus.InGameStatus.Self;
 
         private Transform GetSelfTableUI()
         {
-            Transform userSeat = _self.IsHost ? _teacherSeatTransform : _studentSeatTransforms[_self.Index];
+            Transform userSeat = Self.IsHost ? _teacherSeatTransform : _studentSeatTransforms[Self.Index];
             Transform ui = userSeat.Find("UI");
             return ui;
         }
 
-        public void OnJoinQuizzes(QuizzesUserData __)
+        public void OnSelfJoinQuizzes()
         {
-            if (_self.IsHost)
+            if (Self.IsHost)
             {
                 _quizzesQuestionView = GetSelfTableUI().GetComponent<QuizzesQuestionView>();
                 _quizzesQuestionView.Init(_container);
@@ -364,24 +389,41 @@ namespace Core.Framework
                 _quizzesAnswerView = GetSelfTableUI().GetComponent<QuizzesAnswerView>();
                 _quizzesAnswerView.Init(_container);
             }
-            _ = UpdateQuizzesModuleUI();
+        }
+
+        public void OnJoinQuizzes(QuizzesUserData user)
+        {
+            Debug.Log($"OnJoinQuizzes {user.Index}");
+            UpdateQuizzesStatusModuleUI();
         }
 
         private IQuizzesManualHandling GetCorrespondingQuizzesUI()
         {
-            return _self.IsHost ? _quizzesQuestionView : _quizzesAnswerView;
+            return Self.IsHost ? _quizzesQuestionView : _quizzesAnswerView;
         }
 
-        public void OnLeaveQuizzes(QuizzesUserData __)
+        private async void CleanQuizzesTool()
         {
-            if (_self.IsHost)
-                OnEndQuizQuizzes();
+            if (_quizzesQuestionView != null) _quizzesQuestionView.OnEndSession();
+            if (_quizzesAnswerView != null) _quizzesAnswerView.OnEndSession();
+
+            _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
+            var model = await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(moduleName: ModuleName.RoomStatus);
+            model.Refresh();
+        }
+
+        public void OnLeaveQuizzes(QuizzesUserData user)
+        {
+            Debug.Log($"OnLeaveQuizzes {user.Index}");
+            if (!_userDataController.ServerData.IsInGame || _userDataController.ServerData.RoomStatus.InGameStatus.Self.QuizzesConnectionId == user.QuizzesConnectionId)
+                CleanQuizzesTool();
             else
-                _ = UpdateQuizzesModuleUI();
+                UpdateQuizzesStatusModuleUI();
         }
 
         public void OnStartQuizzes()
         {
+            _gameStore.HideCurrentModule(ModuleName.QuizzesRoomStatus);
             var quizzesPanel = GetCorrespondingQuizzesUI();
             quizzesPanel.OnStart();
         }
@@ -424,7 +466,7 @@ namespace Core.Framework
 
         public void OnAnswerQuizzes(AnswerData data)
         {
-            if (_self.IsHost) _quizzesQuestionView.OnAnswer(data);
+            if (Self.IsHost) _quizzesQuestionView.OnAnswer(data);
         }
 
         #endregion Only Host

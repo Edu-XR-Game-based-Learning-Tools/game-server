@@ -15,6 +15,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using VContainer;
+using static UnityEngine.Rendering.DebugUI;
 
 namespace Core.View
 {
@@ -56,6 +57,14 @@ namespace Core.View
         [SerializeField][DebugOnly] private PressableButton _nextBtn;
 
         [SerializeField][DebugOnly] private PressableButton _settingBtn;
+
+        [SerializeField][DebugOnly] bool _isFirstCreate = true;
+        private void OnEnable()
+        {
+            if (!_isFirstCreate)
+                Refresh();
+            _isFirstCreate = false;
+        }
 
         [Inject]
         public void Init(
@@ -140,6 +149,51 @@ namespace Core.View
             }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter Password" }));
         }
 
+        private async UniTask TryJoinQuizzesRoom()
+        {
+            if (!_userDataController.ServerData.IsInRoom || _userDataController.ServerData.IsInGame) return;
+
+            _showLoadingPublisher.Publish(new ShowLoadingSignal());
+            QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData
+            {
+                RoomId = _roomInputField.text,
+                UserData = _userDataController.ServerData.RoomStatus.RoomStatus.Self,
+            });
+            _userDataController.ServerData.RoomStatus.InGameStatus = response;
+
+            _virtualRoomPresenter.OnSelfJoinQuizzes();
+
+            _gameStore.RemoveCurrentModel();
+            await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
+                moduleName: ModuleName.QuizzesRoomStatus);
+
+            _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+        }
+
+        private void TryJoinClassRoom()
+        {
+            if (_userDataController.ServerData.IsInRoom) return;
+
+            _showPopupPublisher.Publish(new ShowPopupSignal(title: "Enter Your Name", yesContent: "Join", noContent: "Cancel", yesAction: async (value, _) =>
+            {
+                _showLoadingPublisher.Publish(new ShowLoadingSignal());
+                RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData
+                {
+                    RoomId = _roomInputField.text,
+                    UserName = value
+                });
+
+                if (!response.Success && response.JoinClassRoomData != null && !string.IsNullOrEmpty(response.JoinClassRoomData.Password))
+                    AskForPassword(value);
+                else if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
+                    return;
+
+                await OnSuccessJoinRoom(response);
+
+                _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
+            }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter name" }));
+        }
+
         private void RegisterEvents()
         {
             _closeBtn.OnClicked.AddListener(() =>
@@ -147,7 +201,7 @@ namespace Core.View
                 _gameStore.HideCurrentModule(ModuleName.LandingScreen);
             });
 
-            _joinBtn.OnClicked.AddListener(() =>
+            _joinBtn.OnClicked.AddListener(async () =>
             {
                 if (_roomInputField.text.IsNullOrEmpty())
                 {
@@ -155,24 +209,8 @@ namespace Core.View
                     return;
                 }
 
-                _showPopupPublisher.Publish(new ShowPopupSignal(title: "Enter Your Name", yesContent: "Join", noContent: "Cancel", yesAction: async (value, _) =>
-                {
-                    _showLoadingPublisher.Publish(new ShowLoadingSignal());
-                    RoomStatusResponse response = await _classRoomHub.JoinAsync(new JoinClassRoomData
-                    {
-                        RoomId = _roomInputField.text,
-                        UserName = value
-                    });
-
-                    if (!response.Success && !string.IsNullOrEmpty(response.Password))
-                        AskForPassword(value);
-                    else if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
-                        return;
-
-                    await OnSuccessJoinRoom(response);
-
-                    _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
-                }, noAction: (_, _) => { }).SetInitialInput(new bool[] { true }, new string[] { "Enter name" }));
+                TryJoinClassRoom();
+                await TryJoinQuizzesRoom();
             });
 
             _createBtn.OnClicked.AddListener(() =>
@@ -243,6 +281,8 @@ namespace Core.View
                         return;
 
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
+                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _classRoomHub.InviteToGame(response);
 
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
                     await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
@@ -282,10 +322,11 @@ namespace Core.View
             _roomInputField.SetActive(!isInRoomView || !isInGameView);
             _joinBtn.SetActive(!isInRoomView || !isInGameView);
             _joinBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>().text = !isInRoomView ? "Join" : "Join Quizzes";
+
             _createBtn.SetActive(!isInRoomView);
             _userDropdown.GetChild((int)LandingScreenUserDropdownActionType.Logout).SetActive(!isInGameView);
             foreach (var btn in _openToolBtns)
-                btn.SetActive(isInRoomView && !isInGameView);
+                btn.SetActive(isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
 
             EnableIsSignIn();
         }
