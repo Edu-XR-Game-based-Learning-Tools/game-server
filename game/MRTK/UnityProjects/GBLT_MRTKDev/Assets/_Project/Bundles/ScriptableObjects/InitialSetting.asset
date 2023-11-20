@@ -21,18 +21,18 @@ MonoBehaviour:
   Atlas:
     Atlases: []
   NetworkSettings:
-    HostType: 1
+    HostType: 2
     DefaultApiEndPoints:
     - Array:
       - http://localhost:5002
     - Array:
       - http://192.168.1.191:5002
     - Array:
-      - http://20.25.54.224:5002
+      - http://tom-csun-gblt-gs.eastus.cloudapp.azure.com:5002
     DefaultHubEndPoints:
     - Array:
       - http://localhost:5000
     - Array:
       - http://192.168.1.191:5000
     - Array:
-      - http://20.25.54.224:5000
+      - http://tom-csun-gblt-gs.eastus.cloudapp.azure.com:5000

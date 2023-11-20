@@ -31,7 +31,7 @@ namespace Core.Service
                 var collections = await _quizDataService.FindCollectionOnUser(userId);
                 var response = new QuizCollectionListDto
                 {
-                    Collections = collections.Select(_mapper.Map<QuizCollectionDto>).ToArray(),
+                    Collections = collections.Select(_mapper.Map<QuizCollectionDto>).OrderBy(ele => ele.EId).ToArray(),
                 };
                 return response;
             }

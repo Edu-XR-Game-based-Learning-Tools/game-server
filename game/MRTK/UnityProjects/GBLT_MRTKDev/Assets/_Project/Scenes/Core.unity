@@ -1818,6 +1818,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HandMenu
       objectReference: {fileID: 0}
+    - target: {fileID: 8750357562528961998, guid: 429563810b3ca7246a9e3414bbed895f, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9016142877887643178, guid: 429563810b3ca7246a9e3414bbed895f, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

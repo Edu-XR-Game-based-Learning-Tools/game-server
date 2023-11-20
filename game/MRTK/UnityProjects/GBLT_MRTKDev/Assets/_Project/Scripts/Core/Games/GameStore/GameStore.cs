@@ -8,6 +8,7 @@ using Shared.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using VContainer;
 using VContainer.Unity;
 
@@ -142,18 +143,22 @@ namespace Core.Framework
 
         public void RestoreLastHideModules()
         {
-            foreach (var model in GState.Models.Values)
+            try
             {
-                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
-
-                if (_lastHideModules.Contains(model.Module.ModuleName))
+                foreach (var model in GState.Models.Values)
                 {
-                    if (model.Module.ViewContext.View != null)
-                        model.Module.ViewContext.View.SetActive(true);
-                    else GState.RemoveModel(model);
-                    _lastHideModules.Remove(model.Module.ModuleName);
+                    if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+
+                    if (_lastHideModules.Contains(model.Module.ModuleName))
+                    {
+                        if (model.Module.ViewContext.View != null)
+                            model.Module.ViewContext.View.SetActive(true);
+                        else GState.RemoveModel(model);
+                        _lastHideModules.Remove(model.Module.ModuleName);
+                    }
                 }
             }
+            catch (Exception ex) { Debug.LogWarning(ex); }
         }
 
         public async UniTask<TModel> GetOrCreateModel<TClass, TModel>(

@@ -101,8 +101,9 @@ namespace Core.View
                 _noQuestionTxt = transform.Find("NoQuestion_Txt").GetComponent<TextMeshProUGUI>();
                 _nextBtn = transform.Find("Next_Btn").GetComponent<PressableButton>();
 
-                _rootView = transform.GetComponent<QuizzesQuestionView>();
+                _rootView = viewRoot.GetComponent<QuizzesQuestionView>();
 
+                Init();
                 RegisterEvents();
             }
 
@@ -111,20 +112,28 @@ namespace Core.View
             {
                 _nextBtn.OnClicked.AddListener(async () =>
                 {
+                    _nextBtn.SetActive(false);
                     var status = _userDataController.ServerData.RoomStatus.InGameStatus;
-                    if (_isShowScoreboard)
+                    if (!_isShowScoreboard)
                     {
                         _isShowScoreboard = true;
                         await _rootView.ShowScoreboard();
-                        _isShowScoreboard = false;
-                        return;
                     }
-
-                    if (status.JoinQuizzesData.CurrentQuestionIdx == status.QuizCollection.Quizzes.Length)
-                        _ = _quizzesHub.EndSession();
                     else
-                        _ = _quizzesHub.NextQuestion();
+                    {
+                        _isShowScoreboard = false;
+                        if (status.JoinQuizzesData.CurrentQuestionIdx == status.QuizCollection.Quizzes.Length)
+                            _ = _quizzesHub.EndSession();
+                        else
+                            _ = _quizzesHub.NextQuestion();
+                    }
+                    _nextBtn.SetActive(true);
                 });
+            }
+
+            public void Init()
+            {
+                _isShowScoreboard = false;
             }
 
             public void UpdateContent(bool isShowNextBtn = false)
@@ -156,7 +165,7 @@ namespace Core.View
                 _questionTxt = transform.Find("Content/Question_Txt").GetComponent<TextMeshProUGUI>();
                 _progressSlider = transform.Find("Footer/Slider").GetComponent<Microsoft.MixedReality.Toolkit.UX.Slider>();
 
-                _rootView = transform.GetComponent<QuizzesQuestionView>();
+                _rootView = viewRoot.GetComponent<QuizzesQuestionView>();
 
                 Init();
             }
@@ -228,7 +237,7 @@ namespace Core.View
                     _optionTransforms[idx] = optionParent.GetChild(idx);
                 }
 
-                _rootView = transform.GetComponent<QuizzesQuestionView>();
+                _rootView = viewRoot.GetComponent<QuizzesQuestionView>();
 
                 Init();
             }
@@ -434,6 +443,7 @@ namespace Core.View
 
         private async UniTask SetupQuestion()
         {
+            _headerView.Init();
             _previewView.Init();
             _questionView.Init();
             QuizzesStatusResponse status = _userDataController.ServerData.RoomStatus.InGameStatus;

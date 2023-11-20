@@ -24,7 +24,8 @@ namespace Core.View
         [SerializeField][DebugOnly] private PressableButton _roomStatusBtn;
         [SerializeField][DebugOnly] private PressableButton _gameStatusBtn;
         [SerializeField][DebugOnly] private PressableButton _openLastScreenBtn;
-        [SerializeField][DebugOnly] private ToggleCollection _shareToggleCollection;
+        [SerializeField][DebugOnly] private PressableButton _isSharingToggle;
+        [SerializeField][DebugOnly] private PressableButton _isSharingQuizzesToggle;
 
         private void Awake()
         {
@@ -32,10 +33,13 @@ namespace Core.View
             _roomStatusBtn = transform.Find("Canvas/Menu/List").GetChild(1).GetComponent<PressableButton>();
             _gameStatusBtn = transform.Find("Canvas/Menu/List").GetChild(2).GetComponent<PressableButton>();
             _openLastScreenBtn = transform.Find("Canvas/Menu/List").GetChild(3).GetComponent<PressableButton>();
-            _shareToggleCollection = transform.Find("Canvas/Menu/Sharing/Toggle List").GetComponent<ToggleCollection>();
+            _isSharingToggle = transform.Find("Canvas/Menu/Sharing/Toggle List").GetChild(0).GetComponent<PressableButton>();
+            _isSharingQuizzesToggle = transform.Find("Canvas/Menu/Sharing/Toggle List").GetChild(1).GetComponent<PressableButton>();
 
             RegisterEvents();
 
+            _isSharingToggle.ForceSetToggled(false);
+            _isSharingQuizzesToggle.ForceSetToggled(false);
             transform.SetActive(false);
         }
 
@@ -74,19 +78,13 @@ namespace Core.View
             //    _gameStore.OpenLastHiddenModule();
             //});
 
-
-            _shareToggleCollection.OnToggleSelected.AddListener((toggleSelectedIndex) =>
+            _isSharingToggle.OnClicked.AddListener(() =>
             {
-                if (toggleSelectedIndex > -1)
-                {
-                    _userDataController.ServerData.IsSharing = toggleSelectedIndex == 0;
-                    _userDataController.ServerData.IsSharingQuizzesGame = toggleSelectedIndex == 1;
-                }
-                else
-                {
-                    _userDataController.ServerData.IsSharing = false;
-                    _userDataController.ServerData.IsSharingQuizzesGame = false;
-                }
+                _userDataController.ServerData.IsSharing = _isSharingToggle.IsToggled;
+            });
+            _isSharingQuizzesToggle.OnClicked.AddListener(() =>
+            {
+                _userDataController.ServerData.IsSharingQuizzesGame = _isSharingQuizzesToggle.IsToggled;
             });
         }
 
@@ -97,8 +95,8 @@ namespace Core.View
             _roomStatusBtn.SetActive(isInRoomView);
             _gameStatusBtn.SetActive(isInRoomView && isInGameView);
             //_openLastScreenBtn.SetActive(_gameStore.LastHiddenModule != null);
-            _shareToggleCollection.transform.GetChild(0).SetActive(isInRoomView);
-            _shareToggleCollection.transform.GetChild(1).SetActive(isInGameView && new QuizzesStatus[] { QuizzesStatus.InProgress, QuizzesStatus.End }.Contains(_userDataController.ServerData.RoomStatus.InGameStatus.JoinQuizzesData.QuizzesStatus));
+            _isSharingToggle.SetActive(isInRoomView);
+            _isSharingQuizzesToggle.SetActive(isInGameView && new QuizzesStatus[] { QuizzesStatus.InProgress, QuizzesStatus.End }.Contains(_userDataController.ServerData.RoomStatus.InGameStatus.JoinQuizzesData.QuizzesStatus));
         }
     }
 }

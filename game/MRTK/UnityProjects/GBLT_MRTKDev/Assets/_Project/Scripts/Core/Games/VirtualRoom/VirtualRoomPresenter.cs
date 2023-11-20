@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 using VContainer;
 using VContainer.Unity;
@@ -404,9 +405,12 @@ namespace Core.Framework
 
         private async void CleanQuizzesTool()
         {
-            if (_quizzesQuestionView != null) _quizzesQuestionView.OnEndSession();
-            if (_quizzesAnswerView != null) _quizzesAnswerView.OnEndSession();
+            foreach (var userSeat in _studentSeatTransforms)
+                userSeat.Find("UI").GetComponent<QuizzesAnswerView>().OnEndSession();
+            _teacherSeatTransform.Find("UI").GetComponent<QuizzesAnswerView>().OnEndSession();
 
+            _quizzesQuestionView = null;
+            _quizzesAnswerView = null;
             _gameStore.GState.RemoveModel<QuizzesRoomStatusModel>();
             var model = await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(moduleName: ModuleName.RoomStatus);
             model.Refresh();

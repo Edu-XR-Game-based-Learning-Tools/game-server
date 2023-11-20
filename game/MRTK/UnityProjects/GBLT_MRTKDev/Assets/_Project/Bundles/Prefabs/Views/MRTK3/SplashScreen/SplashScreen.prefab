@@ -219,8 +219,7 @@ MonoBehaviour:
   m_text: Welcome to the Game-Based Learning Tool Application. GBLT will give you
     a new experience in edutainment with XR environment. There are expandable tools
     to support teaching including sharable multiplayer games, and single-teaching
-    content. The homepage can be accessed from <color=#29ccff>http://4.246.147.72:5005.
-    </color>
+    content. The homepage can be accessed from <color=#29ccff>http://tom-csun-gblt.eastus.cloudapp.azure.com:5005</color>
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fea6b26abeefbc547b6aca1dbda0a34d, type: 2}
   m_sharedMaterial: {fileID: -2049848100760321927, guid: fea6b26abeefbc547b6aca1dbda0a34d, type: 2}
@@ -568,7 +567,7 @@ MonoBehaviour:
     Label: {fileID: 0}
 --- !u!95 &3917178730949204952
 Animator:
-  serializedVersion: 4
+  serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -585,7 +584,7 @@ Animator:
   m_WarningMessage: 
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorControllerStateOnDisable: 0
+  m_KeepAnimatorStateOnDisable: 0
 --- !u!1001 &1542148549749314356
 PrefabInstance:
   m_ObjectHideFlags: 0
