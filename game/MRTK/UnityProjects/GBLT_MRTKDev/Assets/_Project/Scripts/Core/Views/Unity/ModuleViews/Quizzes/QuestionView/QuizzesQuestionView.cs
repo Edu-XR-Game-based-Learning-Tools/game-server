@@ -114,7 +114,7 @@ namespace Core.View
                 {
                     _nextBtn.SetActive(false);
                     var status = _userDataController.ServerData.RoomStatus.InGameStatus;
-                    if (!_isShowScoreboard)
+                    if (!_isShowScoreboard && status.JoinQuizzesData.CurrentQuestionIdx < status.QuizCollection.Quizzes.Length)
                     {
                         _isShowScoreboard = true;
                         await _rootView.ShowScoreboard();
@@ -157,6 +157,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private Microsoft.MixedReality.Toolkit.UX.Slider _progressSlider;
 
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
+            public Tweener CountDownTween { get; private set; }
 
             public PreviewView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack)
             {
@@ -183,9 +184,11 @@ namespace Core.View
                 _imageObject2D.sprite = await IMG2Sprite.FetchImageSprite(data.Image);
                 _progressSlider.Value = 0;
 
-                DOTween.To(() => _progressSlider.Value, (value) => _progressSlider.Value = value, 1f, Defines.QUIZZES_PREVIEW_QUESTION_SECS).onComplete = () =>
+                CountDownTween = DOTween.To(() => _progressSlider.Value, (value) => _progressSlider.Value = value, 1f, Defines.QUIZZES_PREVIEW_QUESTION_SECS);
+                CountDownTween.onComplete = () =>
                 {
                     _ = _quizzesHub.DonePreview();
+                    CountDownTween = null;
                 };
             }
         }
@@ -210,6 +213,7 @@ namespace Core.View
             [SerializeField][DebugOnly] private QuizzesQuestionView _rootView;
 
             private string _answerAmoutPrefix = "Answer: ";
+            public Tweener CountDownTween { get; private set; }
 
             public QuestionView(Transform transform, IObjectResolver container, Transform viewRoot, System.Action onBack = null) : base(transform, container, viewRoot, onBack, "Countdown/Content/Layout")
             {
@@ -280,9 +284,11 @@ namespace Core.View
             private void StartCountdown(int duration)
             {
                 _countdownTxt.text = $"{duration}s";
-                DOTween.To(() => int.Parse(_countdownTxt.text[..^1]), (value) => _countdownTxt.text = $"{value}s", 0, duration + Defines.QUIZZES_PREVIEW_QUESTION_SECS).onComplete = () =>
+                CountDownTween = DOTween.To(() => int.Parse(_countdownTxt.text[..^1]), (value) => _countdownTxt.text = $"{value}s", 0, duration + Defines.QUIZZES_PREVIEW_QUESTION_SECS);
+                CountDownTween.onComplete = () =>
                 {
                     _ = _quizzesHub.EndQuestion();
+                    CountDownTween = null;
                 };
             }
 
@@ -510,6 +516,8 @@ namespace Core.View
 
         public void OnEndSession()
         {
+            _previewView.CountDownTween.Kill();
+            _questionView.CountDownTween.Kill();
             transform.SetActive(false);
         }
 

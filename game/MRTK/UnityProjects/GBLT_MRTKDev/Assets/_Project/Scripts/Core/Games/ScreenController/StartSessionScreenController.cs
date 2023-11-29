@@ -2,6 +2,7 @@
 using Core.Module;
 using Core.Network;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using MagicOnion;
 using Shared.Network;
 using System.Collections.Generic;

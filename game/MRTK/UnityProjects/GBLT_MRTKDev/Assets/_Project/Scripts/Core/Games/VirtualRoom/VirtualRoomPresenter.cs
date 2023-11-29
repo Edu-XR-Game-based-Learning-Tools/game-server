@@ -405,9 +405,8 @@ namespace Core.Framework
 
         private async void CleanQuizzesTool()
         {
-            foreach (var userSeat in _studentSeatTransforms)
-                userSeat.Find("UI").GetComponent<QuizzesAnswerView>().OnEndSession();
-            _teacherSeatTransform.Find("UI").GetComponent<QuizzesAnswerView>().OnEndSession();
+            if (_quizzesQuestionView != null) _quizzesQuestionView.OnEndSession();
+            if (_quizzesAnswerView != null) _quizzesAnswerView.OnEndSession();
 
             _quizzesQuestionView = null;
             _quizzesAnswerView = null;

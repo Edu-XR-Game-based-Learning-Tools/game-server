@@ -11,9 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Timeline;
 using VContainer;
-using static Unity.Burst.Intrinsics.X86.Avx;
 
 namespace Core.View
 {
@@ -105,6 +103,7 @@ namespace Core.View
         {
         }
 
+
         private bool CheckEnableIfNotEmpty(string text, TextMeshProUGUI view)
         {
             bool isEnable = !string.IsNullOrEmpty(text);
@@ -113,7 +112,7 @@ namespace Core.View
             return isEnable;
         }
 
-        private bool CheckEnableIfNotEmpty(string text, dynamic action, PressableButton view)
+        private bool CheckEnableIfNotEmpty(string text, Action<string, string> action, PressableButton view)
         {
             bool isEnable = !string.IsNullOrEmpty(text) && action != null;
             view.SetActive(isEnable);

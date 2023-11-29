@@ -246,6 +246,8 @@ namespace RpcService.Hub
         {
             var status = await GetGameStatusFromCache();
             status.JoinQuizzesData.CurrentQuestionIdx++;
+            foreach (var student in status.AllInRoom)
+                student.AnswerIdx = null;
             status.JoinQuizzesData.CurrentQuestionStartTime = DateTime.UtcNow.AddSeconds(Defines.QUIZZES_PREVIEW_QUESTION_SECS);
 
             if (status.JoinQuizzesData.CurrentQuestionIdx == status.QuizCollection.Quizzes.Length)

@@ -143,22 +143,17 @@ namespace Core.Framework
 
         public void RestoreLastHideModules()
         {
-            try
+            foreach (var model in GState.Models.Values)
             {
-                foreach (var model in GState.Models.Values)
-                {
-                    if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
+                if (_hideModulesException.Contains(model.Module.ModuleName)) continue;
 
-                    if (_lastHideModules.Contains(model.Module.ModuleName))
-                    {
-                        if (model.Module.ViewContext.View != null)
-                            model.Module.ViewContext.View.SetActive(true);
-                        else GState.RemoveModel(model);
-                        _lastHideModules.Remove(model.Module.ModuleName);
-                    }
+                if (_lastHideModules.Contains(model.Module.ModuleName))
+                {
+                    if (model.Module.ViewContext.View != null)
+                        model.Module.ViewContext.View.SetActive(true);
+                    _lastHideModules.Remove(model.Module.ModuleName);
                 }
             }
-            catch (Exception ex) { Debug.LogWarning(ex); }
         }
 
         public async UniTask<TModel> GetOrCreateModel<TClass, TModel>(

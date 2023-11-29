@@ -21,7 +21,7 @@ MonoBehaviour:
   Atlas:
     Atlases: []
   NetworkSettings:
-    HostType: 2
+    HostType: 1
     DefaultApiEndPoints:
     - Array:
       - http://localhost:5002
