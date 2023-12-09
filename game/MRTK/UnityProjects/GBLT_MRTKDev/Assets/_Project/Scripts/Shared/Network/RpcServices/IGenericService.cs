@@ -17,9 +17,19 @@ namespace Shared.Network
 
     [Serializable]
     [MessagePackObject(true)]
+    public struct AgoraConfig
+    {
+        public string AppId { get; set; }
+        public string AppChannel { get; set; }
+        public string Token { get; set; }
+    }
+
+    [Serializable]
+    [MessagePackObject(true)]
     public partial struct EnvironmentGenericConfig
     {
         public string LauncherUrl { get; set; }
         public string[] EndPoints { get; set; }
+        public AgoraConfig AgoraConfig { get; set; }
     }
 }

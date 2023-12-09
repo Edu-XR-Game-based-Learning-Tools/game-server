@@ -10,6 +10,10 @@ using System.Diagnostics;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
+using Unity.Services.Core;
+using Unity.Services.Vivox;
+using Cysharp.Threading.Tasks;
+using Unity.Services.Authentication;
 
 namespace Core.Framework
 {
@@ -18,16 +22,18 @@ namespace Core.Framework
         [SerializeField] private GameRootInstaller _gameRootInstaller = new();
         [SerializeField] private BusinessInstaller _businessInstaller = new();
         [SerializeField] private NetworkInstaller _networkInstaller = new();
+        [SerializeField] private UnityServiceInstaller _unityServiceInstaller = new();
 
-        protected override void Configure(IContainerBuilder builder)
+        protected override async void Configure(IContainerBuilder builder)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
             Application.targetFrameRate = 60;
 
-            _businessInstaller.Init(builder).Install();
-            _networkInstaller.Init(builder).Install();
-            _gameRootInstaller.Init(builder).Install();
+            await _businessInstaller.Init(builder).Install();
+            await _networkInstaller.Init(builder).Install();
+            await _gameRootInstaller.Init(builder).Install();
+            await _unityServiceInstaller.Init(builder).Install();
 
             UnityEngine.Debug.LogFormat("GameInstaller took {0:0.00} seconds", stopwatch.Elapsed.TotalSeconds);
             stopwatch.Stop();
@@ -40,7 +46,8 @@ namespace Core.Framework
 
     public interface IInjectInstaller
     {
-        void Install();
+        IInjectInstaller Init(IContainerBuilder builder);
+        UniTask Install();
     }
 
     [Serializable]
@@ -52,7 +59,7 @@ namespace Core.Framework
         public IInjectInstaller Init(IContainerBuilder builder)
         { this.builder = builder; return this; }
 
-        public void Install()
+        public UniTask Install()
         {
             InstallGameModuleState();
             InstallModules();
@@ -66,6 +73,8 @@ namespace Core.Framework
             InstallScriptableObject();
 
             InstallEntryPoint();
+
+            return UniTask.CompletedTask;
         }
 
         private void InstallGameModuleState()
@@ -186,9 +195,7 @@ namespace Core.Framework
 
         private void InstallEntryPoint()
         {
-            builder.Register<GameStore>(Lifetime.Singleton);
-
-            builder.RegisterEntryPoint<GameStore>();
+            builder.RegisterEntryPoint<GameStore>(Lifetime.Singleton).AsSelf();
         }
     }
 
@@ -200,7 +207,7 @@ namespace Core.Framework
         public IInjectInstaller Init(IContainerBuilder builder)
         { this.builder = builder; return this; }
 
-        public void Install()
+        public UniTask Install()
         {
             builder.Register<BasePoolObject.Factory>(Lifetime.Singleton);
             builder.Register<IPoolManager, PoolManager>(Lifetime.Singleton);
@@ -215,6 +222,8 @@ namespace Core.Framework
 #if UNITY_EDITOR
             //builder.Register<IDefinitionLoader, DefinitionLoader>(Lifetime.Singleton);
 #endif
+
+            return UniTask.CompletedTask;
         }
     }
 
@@ -226,7 +235,7 @@ namespace Core.Framework
         public IInjectInstaller Init(IContainerBuilder builder)
         { this.builder = builder; return this; }
 
-        public void Install()
+        public UniTask Install()
         {
             builder.Register<IDefinitionDataController, DefinitionDataController>(Lifetime.Singleton);
 
@@ -239,6 +248,9 @@ namespace Core.Framework
             builder.Register<IRpcAuthController, AuthRestController>(Lifetime.Singleton);
             builder.Register<IDataServiceController, DataRestController>(Lifetime.Singleton);
 
+            //builder.Register<IVoiceCallService, VivoxVoiceCallService>(Lifetime.Singleton);
+            builder.RegisterEntryPoint<VivoxVoiceCallService>().As<IVoiceCallService>().AsSelf();
+
             builder.Register<GRpcAuthenticationFilter>(Lifetime.Singleton);
             builder.Register<GRpcRetryHandlerFilter>(Lifetime.Singleton);
 
@@ -246,6 +258,43 @@ namespace Core.Framework
             builder.Register<QuizzesHub>(Lifetime.Singleton);
 
             builder.Register<UserAuthentication>(Lifetime.Singleton);
+
+            return UniTask.CompletedTask;
+        }
+    }
+
+    [Serializable]
+    public class UnityServiceInstaller : IInjectInstaller
+    {
+        public IInjectInstaller Init(IContainerBuilder _)
+        { return this; }
+
+        [SerializeField] private string _key;
+        [SerializeField] private string _issuer;
+        [SerializeField] private string _domain;
+        [SerializeField] private string _server;
+
+        private bool CheckManualCredentials()
+        {
+            return !(string.IsNullOrEmpty(_issuer) && string.IsNullOrEmpty(_domain) && string.IsNullOrEmpty(_server));
+        }
+
+        public async UniTask Install()
+        {
+            var options = new InitializationOptions();
+            if (CheckManualCredentials())
+            {
+                options.SetVivoxCredentials(_server, _domain, _issuer, _key);
+            }
+
+            await UnityServices.InitializeAsync(options);
+            if (!CheckManualCredentials())
+            {
+                AuthenticationService.Instance.ClearSessionToken();
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+
+            await VivoxService.Instance.InitializeAsync();
         }
     }
 }

@@ -55,6 +55,21 @@ namespace Core.Network
             _userDataCachedPublisher.Publish(new UserDataCachedSignal());
         }
 
+        public async UniTask<EnvironmentGenericConfig> GetGenericConfig()
+        {
+            bool isDoneRequest = false;
+            EnvironmentGenericConfig result = new();
+            RestClient.Get($"{_endPointSwitcher.ApiEndPoint}/api/generic/getGenericConfig")
+            .Then(response =>
+            {
+                result = JsonConvert.DeserializeObject<EnvironmentGenericConfig>(response.Text);
+                isDoneRequest = true;
+            });
+            await UniTask.WaitUntil(() => isDoneRequest);
+
+            return result;
+        }
+
         public async UniTask<byte[]> LoadDefinitions()
         {
             bool isDoneRequest = false;
@@ -67,7 +82,6 @@ namespace Core.Network
             });
             await UniTask.WaitUntil(() => isDoneRequest);
 
-            UnityEngine.Debug.Log($"LoadDefinitions: {definitions}");
             return definitions;
         }
 

@@ -19,6 +19,8 @@ namespace Shared.Network
     public class VirtualRoomTickData
     {
         public Vec3D HeadRotation { get; set; }
+        public byte[] VoiceData { get; set; }
+        public int SamplePosition { get; set; } // For reusing the old audio clip
     }
 
     [System.Serializable]

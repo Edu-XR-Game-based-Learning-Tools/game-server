@@ -271,6 +271,8 @@ namespace RpcService.Hub
         public Task VirtualRoomTickSync(VirtualRoomTickData data)
         {
             _self.HeadRotation = data.HeadRotation;
+            _self.VoiceSamples = data.VoiceData;
+            _self.SamplePosition = data.SamplePosition;
             Broadcast(_room).OnRoomTick(new VirtualRoomTickResponse
             {
                 User = _self,

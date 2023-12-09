@@ -2556,7 +2556,7 @@ MonoBehaviour:
   _isSharingQuizzesCache: 0
   _isSharingCache: 0
   _isStillNoTeacher: 0
-  _delaySyncDuration: 0.25
+  _delaySyncDuration: 0.15
   _delaySyncData: 0
   _delaySharingSyncDuration: 1
   _delaySharingSyncData: 0

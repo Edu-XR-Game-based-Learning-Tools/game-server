@@ -48,6 +48,7 @@ namespace Core.Framework
         {
             UnityEngine.Debug.Log($"Addressable url: {EnvSetting.AddressableProdUrl}");
             byte[] definitions = await _dataServiceController.LoadDefinitions();
+            _gameStore.EnvConfig = await _dataServiceController.GetGenericConfig();
             ((RemoteDefinitionLoader)_definitionLoader).InitMemoryDefinitions(definitions);
 
             await _definitionDataController.VerifyClient();

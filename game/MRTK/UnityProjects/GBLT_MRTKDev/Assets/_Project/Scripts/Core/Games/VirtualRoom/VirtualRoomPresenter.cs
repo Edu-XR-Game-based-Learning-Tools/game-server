@@ -6,14 +6,13 @@ using Core.Utility;
 using Core.View;
 using Cysharp.Threading.Tasks;
 using MessagePipe;
-using Models;
 using Shared;
+using Shared.Extension;
 using Shared.Network;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 using VContainer;
 using VContainer.Unity;
@@ -27,6 +26,7 @@ namespace Core.Framework
         private IDefinitionManager _definitionManager;
         private IBundleLoader _bundleLoader;
         private IUserDataController _userDataController;
+        private IVoiceCallService _voiceCallService;
 
         [Inject]
         private readonly IPublisher<OnVirtualRoomTickSignal> _onUserTransformChangePublisher;
@@ -45,6 +45,7 @@ namespace Core.Framework
 
         [Header("Share Screen")]
         [SerializeField][DebugOnly] private Camera _shareScreenCam;
+
         [SerializeField][DebugOnly] private RenderTexture _screenRenderTexture;
         [SerializeField][DebugOnly] private Camera _quizzesShareCam;
         [SerializeField][DebugOnly] private RenderTexture _quizzesShareRenderTexture;
@@ -61,6 +62,7 @@ namespace Core.Framework
             _definitionManager = container.Resolve<IDefinitionManager>();
             _bundleLoader = container.Resolve<IReadOnlyList<IBundleLoader>>().ElementAt((int)BundleLoaderName.Addressable);
             _userDataController = container.Resolve<IUserDataController>();
+            _voiceCallService = container.Resolve<IVoiceCallService>();
         }
 
         public async void Init()
@@ -121,6 +123,8 @@ namespace Core.Framework
             }
 
             characterObject.Find("Head").ChangeLayersRecursively(isSelf ? "SelfModel" : "Default");
+            //AudioSource audioSource = characterObject.Find("Head").gameObject.AddComponent<AudioSource>();
+            //audioSource.clip = AudioClip.Create($"{characterObject.name}_clip", Defines.MIC_SAMPLE_LENGTH * Defines.MIC_FREQUENCY, ((VoiceCallService)_voiceCallService).MicAudioClip.channels, Defines.MIC_FREQUENCY, false);
 
             return characterObject;
         }
@@ -163,6 +167,8 @@ namespace Core.Framework
 
         public async UniTask Spawn() // 24 - 48
         {
+            await _voiceCallService.JoinChannelAsync(_userDataController.ServerData.RoomStatus.RoomStatus.Self.Name + "_" + _userDataController.ServerData.RoomStatus.RoomStatus.Self.Index, "lobbyChannel");
+
             foreach (Transform transform in _studentCharacters)
                 if (transform != null)
                     Destroy(transform.gameObject);
@@ -204,7 +210,10 @@ namespace Core.Framework
         {
             Debug.Log($"OnLeave {user.Index}");
             if (!_userDataController.ServerData.IsInRoom || _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId == user.ConnectionId)
+            {
                 Clean();
+                _voiceCallService.LeaveChannelAsync();
+            }
             else
             {
                 DestroyCharacter(user);
@@ -229,8 +238,10 @@ namespace Core.Framework
         }
 
         #region Sharing
-        [SerializeField] bool _isSharingQuizzesCache = false;
-        [SerializeField] bool _isSharingCache = false;
+
+        [SerializeField] private bool _isSharingQuizzesCache = false;
+        [SerializeField] private bool _isSharingCache = false;
+
         private Texture2D GetShareTexture()
         {
             if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return null;
@@ -247,11 +258,14 @@ namespace Core.Framework
             else return null;
         }
 
-        [SerializeField][DebugOnly] bool _isStillNoTeacher = false;
-        [SerializeField] float _delaySyncDuration = 0.25f;
-        [SerializeField][DebugOnly] float _delaySyncData;
-        [SerializeField] float _delaySharingSyncDuration = 1f;
-        [SerializeField][DebugOnly] float _delaySharingSyncData;
+        [SerializeField][DebugOnly] private bool _isStillNoTeacher = false;
+
+        [SerializeField] private float _delaySyncDuration = 0.15f;
+        [SerializeField][DebugOnly] private float _delaySyncData;
+        [SerializeField] private float _delaySharingSyncDuration = 1f;
+
+        [SerializeField][DebugOnly] private float _delaySharingSyncData;
+
         private void PublishRoomTickData()
         {
             _delaySyncData -= Time.deltaTime;
@@ -260,9 +274,12 @@ namespace Core.Framework
             _delaySyncData = _delaySyncDuration;
 
             var xrCamEuler = _shareScreenCam.transform.parent.eulerAngles;
+            //var (samples, samplePosition) = _voiceCallService.GetSamples();
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(tickData: new VirtualRoomTickData
             {
                 HeadRotation = new Vec3D(-xrCamEuler.x, xrCamEuler.y + 180f, xrCamEuler.z),
+                //VoiceData = samples,
+                //SamplePosition = samplePosition,
             }));
         }
 
@@ -300,8 +317,7 @@ namespace Core.Framework
                 if (!_isStillNoTeacher)
                     if (_teacherSeatTransform.Find("CharPosition").childCount > 0)
                         _teacherCharacter = _teacherSeatTransform.Find("CharPosition").GetChild(0);
-                if (_teacherCharacter == null) _isStillNoTeacher = true;
-                else PublishTickData();
+                _isStillNoTeacher = _teacherCharacter == null || !_teacherCharacter.gameObject.activeInHierarchy;
                 return;
             }
             _isStillNoTeacher = false;
@@ -315,6 +331,7 @@ namespace Core.Framework
             if (!_userDataController.ServerData.IsInRoom) return;
             PublishTickData();
         }
+
         #endregion Sharing
 
         private void Update()
@@ -340,9 +357,21 @@ namespace Core.Framework
             userModelParent.GetChild(0).Find("Head").transform.eulerAngles = user.HeadRotation.ToVector3();
         }
 
+        private void HandleVoice(PublicUserData user)
+        {
+            if (user == null || user.VoiceSamples == null || user.VoiceSamples.Length == 0) return;
+
+            Transform userModelParent = GetCharacterParent(user);
+            if (userModelParent == null || userModelParent.childCount == 0) return;
+            AudioSource audioSource = userModelParent.GetChild(0).Find("Head").GetComponent<AudioSource>();
+            audioSource.clip.SetData(user.VoiceSamples.ConvertByteToFloat(), user.SamplePosition);
+            if (!audioSource.isPlaying) audioSource.Play();
+        }
+
         public void OnRoomTick(VirtualRoomTickResponse response)
         {
             OnTransform(response.User);
+            HandleVoice(response.User);
         }
 
         public void OnSharingTick(SharingTickData response)
