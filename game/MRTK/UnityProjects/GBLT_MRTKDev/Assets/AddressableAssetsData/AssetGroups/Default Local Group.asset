@@ -37,6 +37,10 @@ MonoBehaviour:
     m_Address: Assets/_Project/Bundles/Graphics/Avatar
     m_ReadOnly: 0
     m_SerializedLabels: []
+  - m_GUID: 1a789c68ade244845b5073f49e5c1dc0
+    m_Address: Assets/_Project/Bundles/Audios
+    m_ReadOnly: 0
+    m_SerializedLabels: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: a78960d09f5a1e847bffd06df3af3ba8, type: 2}
   m_SchemaSet:

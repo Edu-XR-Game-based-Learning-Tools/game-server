@@ -47,7 +47,7 @@ namespace MessagePack.Resolvers
 
         static GeneratedResolverGetFormatterHelper()
         {
-            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(40)
+            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(41)
             {
                 { typeof(global::Shared.Network.PublicUserData[]), 0 },
                 { typeof(global::Shared.Network.QuizCollectionDto[]), 1 },
@@ -57,38 +57,39 @@ namespace MessagePack.Resolvers
                 { typeof(global::Shared.Network.QuizzesStatus), 5 },
                 { typeof(global::Shared.Network.ToolType), 6 },
                 { typeof(global::Shared.Network.AccessToken), 7 },
-                { typeof(global::Shared.Network.AnswerData), 8 },
-                { typeof(global::Shared.Network.AuthenticationData), 9 },
-                { typeof(global::Shared.Network.BaseDbDto), 10 },
-                { typeof(global::Shared.Network.ClassRoomDefinition), 11 },
-                { typeof(global::Shared.Network.ClientVerificationData), 12 },
-                { typeof(global::Shared.Network.EnvironmentGenericConfig), 13 },
-                { typeof(global::Shared.Network.ExchangeRefreshTokenRequest), 14 },
-                { typeof(global::Shared.Network.FirebaseConfig), 15 },
-                { typeof(global::Shared.Network.GeneralConfigDefinition), 16 },
-                { typeof(global::Shared.Network.GeneralResponse), 17 },
-                { typeof(global::Shared.Network.GeneralRoomStatusResponse), 18 },
-                { typeof(global::Shared.Network.GenericNotificationMessage), 19 },
-                { typeof(global::Shared.Network.GoogleConfig), 20 },
-                { typeof(global::Shared.Network.InviteToGameData), 21 },
-                { typeof(global::Shared.Network.JoinClassRoomData), 22 },
-                { typeof(global::Shared.Network.JoinQuizzesData), 23 },
-                { typeof(global::Shared.Network.LoginRequest), 24 },
-                { typeof(global::Shared.Network.LoginResponse), 25 },
-                { typeof(global::Shared.Network.PrivateUserData), 26 },
-                { typeof(global::Shared.Network.PublicUserData), 27 },
-                { typeof(global::Shared.Network.QuizCollectionDto), 28 },
-                { typeof(global::Shared.Network.QuizCollectionListDto), 29 },
-                { typeof(global::Shared.Network.QuizDto), 30 },
-                { typeof(global::Shared.Network.QuizzesStatusResponse), 31 },
-                { typeof(global::Shared.Network.QuizzesUserData), 32 },
-                { typeof(global::Shared.Network.RegisterRequest), 33 },
-                { typeof(global::Shared.Network.RoomStatusResponse), 34 },
-                { typeof(global::Shared.Network.SharingTickData), 35 },
-                { typeof(global::Shared.Network.UserData), 36 },
-                { typeof(global::Shared.Network.Vec3D), 37 },
-                { typeof(global::Shared.Network.VirtualRoomTickData), 38 },
-                { typeof(global::Shared.Network.VirtualRoomTickResponse), 39 },
+                { typeof(global::Shared.Network.AgoraConfig), 8 },
+                { typeof(global::Shared.Network.AnswerData), 9 },
+                { typeof(global::Shared.Network.AuthenticationData), 10 },
+                { typeof(global::Shared.Network.BaseDbDto), 11 },
+                { typeof(global::Shared.Network.ClassRoomDefinition), 12 },
+                { typeof(global::Shared.Network.ClientVerificationData), 13 },
+                { typeof(global::Shared.Network.EnvironmentGenericConfig), 14 },
+                { typeof(global::Shared.Network.ExchangeRefreshTokenRequest), 15 },
+                { typeof(global::Shared.Network.FirebaseConfig), 16 },
+                { typeof(global::Shared.Network.GeneralConfigDefinition), 17 },
+                { typeof(global::Shared.Network.GeneralResponse), 18 },
+                { typeof(global::Shared.Network.GeneralRoomStatusResponse), 19 },
+                { typeof(global::Shared.Network.GenericNotificationMessage), 20 },
+                { typeof(global::Shared.Network.GoogleConfig), 21 },
+                { typeof(global::Shared.Network.InviteToGameData), 22 },
+                { typeof(global::Shared.Network.JoinClassRoomData), 23 },
+                { typeof(global::Shared.Network.JoinQuizzesData), 24 },
+                { typeof(global::Shared.Network.LoginRequest), 25 },
+                { typeof(global::Shared.Network.LoginResponse), 26 },
+                { typeof(global::Shared.Network.PrivateUserData), 27 },
+                { typeof(global::Shared.Network.PublicUserData), 28 },
+                { typeof(global::Shared.Network.QuizCollectionDto), 29 },
+                { typeof(global::Shared.Network.QuizCollectionListDto), 30 },
+                { typeof(global::Shared.Network.QuizDto), 31 },
+                { typeof(global::Shared.Network.QuizzesStatusResponse), 32 },
+                { typeof(global::Shared.Network.QuizzesUserData), 33 },
+                { typeof(global::Shared.Network.RegisterRequest), 34 },
+                { typeof(global::Shared.Network.RoomStatusResponse), 35 },
+                { typeof(global::Shared.Network.SharingTickData), 36 },
+                { typeof(global::Shared.Network.UserData), 37 },
+                { typeof(global::Shared.Network.Vec3D), 38 },
+                { typeof(global::Shared.Network.VirtualRoomTickData), 39 },
+                { typeof(global::Shared.Network.VirtualRoomTickResponse), 40 },
             };
         }
 
@@ -110,38 +111,39 @@ namespace MessagePack.Resolvers
                 case 5: return new MessagePack.Formatters.Shared.Network.QuizzesStatusFormatter();
                 case 6: return new MessagePack.Formatters.Shared.Network.ToolTypeFormatter();
                 case 7: return new MessagePack.Formatters.Shared.Network.AccessTokenFormatter();
-                case 8: return new MessagePack.Formatters.Shared.Network.AnswerDataFormatter();
-                case 9: return new MessagePack.Formatters.Shared.Network.AuthenticationDataFormatter();
-                case 10: return new MessagePack.Formatters.Shared.Network.BaseDbDtoFormatter();
-                case 11: return new MessagePack.Formatters.Shared.Network.ClassRoomDefinitionFormatter();
-                case 12: return new MessagePack.Formatters.Shared.Network.ClientVerificationDataFormatter();
-                case 13: return new MessagePack.Formatters.Shared.Network.EnvironmentGenericConfigFormatter();
-                case 14: return new MessagePack.Formatters.Shared.Network.ExchangeRefreshTokenRequestFormatter();
-                case 15: return new MessagePack.Formatters.Shared.Network.FirebaseConfigFormatter();
-                case 16: return new MessagePack.Formatters.Shared.Network.GeneralConfigDefinitionFormatter();
-                case 17: return new MessagePack.Formatters.Shared.Network.GeneralResponseFormatter();
-                case 18: return new MessagePack.Formatters.Shared.Network.GeneralRoomStatusResponseFormatter();
-                case 19: return new MessagePack.Formatters.Shared.Network.GenericNotificationMessageFormatter();
-                case 20: return new MessagePack.Formatters.Shared.Network.GoogleConfigFormatter();
-                case 21: return new MessagePack.Formatters.Shared.Network.InviteToGameDataFormatter();
-                case 22: return new MessagePack.Formatters.Shared.Network.JoinClassRoomDataFormatter();
-                case 23: return new MessagePack.Formatters.Shared.Network.JoinQuizzesDataFormatter();
-                case 24: return new MessagePack.Formatters.Shared.Network.LoginRequestFormatter();
-                case 25: return new MessagePack.Formatters.Shared.Network.LoginResponseFormatter();
-                case 26: return new MessagePack.Formatters.Shared.Network.PrivateUserDataFormatter();
-                case 27: return new MessagePack.Formatters.Shared.Network.PublicUserDataFormatter();
-                case 28: return new MessagePack.Formatters.Shared.Network.QuizCollectionDtoFormatter();
-                case 29: return new MessagePack.Formatters.Shared.Network.QuizCollectionListDtoFormatter();
-                case 30: return new MessagePack.Formatters.Shared.Network.QuizDtoFormatter();
-                case 31: return new MessagePack.Formatters.Shared.Network.QuizzesStatusResponseFormatter();
-                case 32: return new MessagePack.Formatters.Shared.Network.QuizzesUserDataFormatter();
-                case 33: return new MessagePack.Formatters.Shared.Network.RegisterRequestFormatter();
-                case 34: return new MessagePack.Formatters.Shared.Network.RoomStatusResponseFormatter();
-                case 35: return new MessagePack.Formatters.Shared.Network.SharingTickDataFormatter();
-                case 36: return new MessagePack.Formatters.Shared.Network.UserDataFormatter();
-                case 37: return new MessagePack.Formatters.Shared.Network.Vec3DFormatter();
-                case 38: return new MessagePack.Formatters.Shared.Network.VirtualRoomTickDataFormatter();
-                case 39: return new MessagePack.Formatters.Shared.Network.VirtualRoomTickResponseFormatter();
+                case 8: return new MessagePack.Formatters.Shared.Network.AgoraConfigFormatter();
+                case 9: return new MessagePack.Formatters.Shared.Network.AnswerDataFormatter();
+                case 10: return new MessagePack.Formatters.Shared.Network.AuthenticationDataFormatter();
+                case 11: return new MessagePack.Formatters.Shared.Network.BaseDbDtoFormatter();
+                case 12: return new MessagePack.Formatters.Shared.Network.ClassRoomDefinitionFormatter();
+                case 13: return new MessagePack.Formatters.Shared.Network.ClientVerificationDataFormatter();
+                case 14: return new MessagePack.Formatters.Shared.Network.EnvironmentGenericConfigFormatter();
+                case 15: return new MessagePack.Formatters.Shared.Network.ExchangeRefreshTokenRequestFormatter();
+                case 16: return new MessagePack.Formatters.Shared.Network.FirebaseConfigFormatter();
+                case 17: return new MessagePack.Formatters.Shared.Network.GeneralConfigDefinitionFormatter();
+                case 18: return new MessagePack.Formatters.Shared.Network.GeneralResponseFormatter();
+                case 19: return new MessagePack.Formatters.Shared.Network.GeneralRoomStatusResponseFormatter();
+                case 20: return new MessagePack.Formatters.Shared.Network.GenericNotificationMessageFormatter();
+                case 21: return new MessagePack.Formatters.Shared.Network.GoogleConfigFormatter();
+                case 22: return new MessagePack.Formatters.Shared.Network.InviteToGameDataFormatter();
+                case 23: return new MessagePack.Formatters.Shared.Network.JoinClassRoomDataFormatter();
+                case 24: return new MessagePack.Formatters.Shared.Network.JoinQuizzesDataFormatter();
+                case 25: return new MessagePack.Formatters.Shared.Network.LoginRequestFormatter();
+                case 26: return new MessagePack.Formatters.Shared.Network.LoginResponseFormatter();
+                case 27: return new MessagePack.Formatters.Shared.Network.PrivateUserDataFormatter();
+                case 28: return new MessagePack.Formatters.Shared.Network.PublicUserDataFormatter();
+                case 29: return new MessagePack.Formatters.Shared.Network.QuizCollectionDtoFormatter();
+                case 30: return new MessagePack.Formatters.Shared.Network.QuizCollectionListDtoFormatter();
+                case 31: return new MessagePack.Formatters.Shared.Network.QuizDtoFormatter();
+                case 32: return new MessagePack.Formatters.Shared.Network.QuizzesStatusResponseFormatter();
+                case 33: return new MessagePack.Formatters.Shared.Network.QuizzesUserDataFormatter();
+                case 34: return new MessagePack.Formatters.Shared.Network.RegisterRequestFormatter();
+                case 35: return new MessagePack.Formatters.Shared.Network.RoomStatusResponseFormatter();
+                case 36: return new MessagePack.Formatters.Shared.Network.SharingTickDataFormatter();
+                case 37: return new MessagePack.Formatters.Shared.Network.UserDataFormatter();
+                case 38: return new MessagePack.Formatters.Shared.Network.Vec3DFormatter();
+                case 39: return new MessagePack.Formatters.Shared.Network.VirtualRoomTickDataFormatter();
+                case 40: return new MessagePack.Formatters.Shared.Network.VirtualRoomTickResponseFormatter();
                 default: return null;
             }
         }
@@ -303,6 +305,73 @@ namespace MessagePack.Formatters.Shared.Network
                         if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 8377087168810808137UL) { goto FAIL; }
 
                         ____result.IssuedAt = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.DateTime>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
+
+                }
+            }
+
+            reader.Depth--;
+            return ____result;
+        }
+    }
+
+    public sealed class AgoraConfigFormatter : global::MessagePack.Formatters.IMessagePackFormatter<global::Shared.Network.AgoraConfig>
+    {
+        // AppId
+        private static global::System.ReadOnlySpan<byte> GetSpan_AppId() => new byte[1 + 5] { 165, 65, 112, 112, 73, 100 };
+        // AppChannel
+        private static global::System.ReadOnlySpan<byte> GetSpan_AppChannel() => new byte[1 + 10] { 170, 65, 112, 112, 67, 104, 97, 110, 110, 101, 108 };
+        // Token
+        private static global::System.ReadOnlySpan<byte> GetSpan_Token() => new byte[1 + 5] { 165, 84, 111, 107, 101, 110 };
+
+        public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.AgoraConfig value, global::MessagePack.MessagePackSerializerOptions options)
+        {
+            var formatterResolver = options.Resolver;
+            writer.WriteMapHeader(3);
+            writer.WriteRaw(GetSpan_AppId());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.AppId, options);
+            writer.WriteRaw(GetSpan_AppChannel());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.AppChannel, options);
+            writer.WriteRaw(GetSpan_Token());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Token, options);
+        }
+
+        public global::Shared.Network.AgoraConfig Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                throw new global::System.InvalidOperationException("typecode is null, struct not supported");
+            }
+
+            options.Security.DepthStep(ref reader);
+            var formatterResolver = options.Resolver;
+            var length = reader.ReadMapHeader();
+            var ____result = new global::Shared.Network.AgoraConfig();
+
+            for (int i = 0; i < length; i++)
+            {
+                var stringKey = global::MessagePack.Internal.CodeGenHelpers.ReadStringSpan(ref reader);
+                switch (stringKey.Length)
+                {
+                    default:
+                    FAIL:
+                      reader.Skip();
+                      continue;
+                    case 5:
+                        switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
+                        {
+                            default: goto FAIL;
+                            case 430728835137UL:
+                                ____result.AppId = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+                            case 474147942228UL:
+                                ____result.Token = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+                        }
+                    case 10:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_AppChannel().Slice(1))) { goto FAIL; }
+
+                        ____result.AppChannel = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
                         continue;
 
                 }
@@ -895,15 +964,19 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_LauncherUrl() => new byte[1 + 11] { 171, 76, 97, 117, 110, 99, 104, 101, 114, 85, 114, 108 };
         // EndPoints
         private static global::System.ReadOnlySpan<byte> GetSpan_EndPoints() => new byte[1 + 9] { 169, 69, 110, 100, 80, 111, 105, 110, 116, 115 };
+        // AgoraConfig
+        private static global::System.ReadOnlySpan<byte> GetSpan_AgoraConfig() => new byte[1 + 11] { 171, 65, 103, 111, 114, 97, 67, 111, 110, 102, 105, 103 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.EnvironmentGenericConfig value, global::MessagePack.MessagePackSerializerOptions options)
         {
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(2);
+            writer.WriteMapHeader(3);
             writer.WriteRaw(GetSpan_LauncherUrl());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.LauncherUrl, options);
             writer.WriteRaw(GetSpan_EndPoints());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string[]>(formatterResolver).Serialize(ref writer, value.EndPoints, options);
+            writer.WriteRaw(GetSpan_AgoraConfig());
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.AgoraConfig>(formatterResolver).Serialize(ref writer, value.AgoraConfig, options);
         }
 
         public global::Shared.Network.EnvironmentGenericConfig Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -928,10 +1001,22 @@ namespace MessagePack.Formatters.Shared.Network
                       reader.Skip();
                       continue;
                     case 11:
-                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_LauncherUrl().Slice(1))) { goto FAIL; }
+                        switch (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey))
+                        {
+                            default: goto FAIL;
+                            case 8243109469235798348UL:
+                                if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 7107157UL) { goto FAIL; }
 
-                        ____result.LauncherUrl = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
-                        continue;
+                                ____result.LauncherUrl = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+
+                            case 7957653152397748033UL:
+                                if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 6777190UL) { goto FAIL; }
+
+                                ____result.AgoraConfig = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.AgoraConfig>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+
+                        }
                     case 9:
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_EndPoints().Slice(1))) { goto FAIL; }
 
@@ -1961,6 +2046,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_HeadRotation() => new byte[1 + 12] { 172, 72, 101, 97, 100, 82, 111, 116, 97, 116, 105, 111, 110 };
         // IsHost
         private static global::System.ReadOnlySpan<byte> GetSpan_IsHost() => new byte[1 + 6] { 166, 73, 115, 72, 111, 115, 116 };
+        // VoiceSamples
+        private static global::System.ReadOnlySpan<byte> GetSpan_VoiceSamples() => new byte[1 + 12] { 172, 86, 111, 105, 99, 101, 83, 97, 109, 112, 108, 101, 115 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.PrivateUserData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -1971,7 +2058,7 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(7);
+            writer.WriteMapHeader(8);
             writer.WriteRaw(GetSpan_ConnectionId());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.Guid?>(formatterResolver).Serialize(ref writer, value.ConnectionId, options);
             writer.WriteRaw(GetSpan_Index());
@@ -1986,6 +2073,8 @@ namespace MessagePack.Formatters.Shared.Network
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Serialize(ref writer, value.HeadRotation, options);
             writer.WriteRaw(GetSpan_IsHost());
             writer.Write(value.IsHost);
+            writer.WriteRaw(GetSpan_VoiceSamples());
+            writer.Write(value.VoiceSamples);
         }
 
         public global::Shared.Network.PrivateUserData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -2023,6 +2112,12 @@ namespace MessagePack.Formatters.Shared.Network
                                 if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 1852795252UL) { goto FAIL; }
 
                                 ____result.HeadRotation = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+
+                            case 7881672517799735126UL:
+                                if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 1936026736UL) { goto FAIL; }
+
+                                ____result.VoiceSamples = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                                 continue;
 
                         }
@@ -2076,6 +2171,8 @@ namespace MessagePack.Formatters.Shared.Network
         private static global::System.ReadOnlySpan<byte> GetSpan_HeadRotation() => new byte[1 + 12] { 172, 72, 101, 97, 100, 82, 111, 116, 97, 116, 105, 111, 110 };
         // IsHost
         private static global::System.ReadOnlySpan<byte> GetSpan_IsHost() => new byte[1 + 6] { 166, 73, 115, 72, 111, 115, 116 };
+        // VoiceSamples
+        private static global::System.ReadOnlySpan<byte> GetSpan_VoiceSamples() => new byte[1 + 12] { 172, 86, 111, 105, 99, 101, 83, 97, 109, 112, 108, 101, 115 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.PublicUserData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -2086,7 +2183,7 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(7);
+            writer.WriteMapHeader(8);
             writer.WriteRaw(GetSpan_ConnectionId());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.Guid?>(formatterResolver).Serialize(ref writer, value.ConnectionId, options);
             writer.WriteRaw(GetSpan_Index());
@@ -2101,6 +2198,8 @@ namespace MessagePack.Formatters.Shared.Network
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Serialize(ref writer, value.HeadRotation, options);
             writer.WriteRaw(GetSpan_IsHost());
             writer.Write(value.IsHost);
+            writer.WriteRaw(GetSpan_VoiceSamples());
+            writer.Write(value.VoiceSamples);
         }
 
         public global::Shared.Network.PublicUserData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -2138,6 +2237,12 @@ namespace MessagePack.Formatters.Shared.Network
                                 if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 1852795252UL) { goto FAIL; }
 
                                 ____result.HeadRotation = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Deserialize(ref reader, options);
+                                continue;
+
+                            case 7881672517799735126UL:
+                                if (global::MessagePack.Internal.AutomataKeyGen.GetKey(ref stringKey) != 1936026736UL) { goto FAIL; }
+
+                                ____result.VoiceSamples = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                                 continue;
 
                         }
@@ -3294,6 +3399,10 @@ namespace MessagePack.Formatters.Shared.Network
     {
         // HeadRotation
         private static global::System.ReadOnlySpan<byte> GetSpan_HeadRotation() => new byte[1 + 12] { 172, 72, 101, 97, 100, 82, 111, 116, 97, 116, 105, 111, 110 };
+        // VoiceData
+        private static global::System.ReadOnlySpan<byte> GetSpan_VoiceData() => new byte[1 + 9] { 169, 86, 111, 105, 99, 101, 68, 97, 116, 97 };
+        // SamplePosition
+        private static global::System.ReadOnlySpan<byte> GetSpan_SamplePosition() => new byte[1 + 14] { 174, 83, 97, 109, 112, 108, 101, 80, 111, 115, 105, 116, 105, 111, 110 };
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Shared.Network.VirtualRoomTickData value, global::MessagePack.MessagePackSerializerOptions options)
         {
@@ -3304,9 +3413,13 @@ namespace MessagePack.Formatters.Shared.Network
             }
 
             var formatterResolver = options.Resolver;
-            writer.WriteMapHeader(1);
+            writer.WriteMapHeader(3);
             writer.WriteRaw(GetSpan_HeadRotation());
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Serialize(ref writer, value.HeadRotation, options);
+            writer.WriteRaw(GetSpan_VoiceData());
+            writer.Write(value.VoiceData);
+            writer.WriteRaw(GetSpan_SamplePosition());
+            writer.Write(value.SamplePosition);
         }
 
         public global::Shared.Network.VirtualRoomTickData Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -3334,6 +3447,16 @@ namespace MessagePack.Formatters.Shared.Network
                         if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_HeadRotation().Slice(1))) { goto FAIL; }
 
                         ____result.HeadRotation = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Shared.Network.Vec3D>(formatterResolver).Deserialize(ref reader, options);
+                        continue;
+                    case 9:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_VoiceData().Slice(1))) { goto FAIL; }
+
+                        ____result.VoiceData = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
+                        continue;
+                    case 14:
+                        if (!global::System.MemoryExtensions.SequenceEqual(stringKey, GetSpan_SamplePosition().Slice(1))) { goto FAIL; }
+
+                        ____result.SamplePosition = reader.ReadInt32();
                         continue;
 
                 }

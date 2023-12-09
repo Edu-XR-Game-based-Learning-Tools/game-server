@@ -26,6 +26,9 @@ namespace Shared
 
         public const int QUIZZES_PREVIEW_QUESTION_SECS = 4;
 
+        public const int MIC_SAMPLE_LENGTH = 10;
+        public const int MIC_FREQUENCY = 44100;
+
         public static class PrefabKey
         {
             public static string[] AvatarPaths = new string[] {
@@ -72,6 +75,8 @@ namespace Shared
 
             public static string DefaultRoomAvatar = AvatarPaths[0];
             public static string DefaultRoomModel = ModelPaths[0];
+
+            public static string AudioSourceMicMute = "Assets/_Project/Bundles/Audios/AudioSource/MicMute.prefab";
         }
     }
 

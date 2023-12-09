@@ -66,5 +66,10 @@ namespace Core.Network
             var serverTime = await _gRpcServiceClient.CreateServiceWithFilter<IGenericService>(_unAuthenClientFilter).GetServerTime();
             return serverTime;
         }
+
+        public UniTask<EnvironmentGenericConfig> GetGenericConfig()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

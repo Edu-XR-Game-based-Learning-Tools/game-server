@@ -15,6 +15,8 @@ namespace Shared.Network
         public string ModelPath { get; set; } = Defines.PrefabKey.DefaultRoomModel;
         public Vec3D HeadRotation { get; set; }
         public bool IsHost => Index == -1;
+        public byte[] VoiceSamples { get; set; }
+        public int SamplePosition { get; set; }
     }
 
     [System.Serializable]

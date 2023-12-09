@@ -121,11 +121,11 @@ namespace Core.View
                 RoomStatus = response
             };
 
+            await _virtualRoomPresenter.Spawn();
+
             _gameStore.GState.RemoveModel<LandingScreenModel>();
             (await _gameStore.GetOrCreateModel<RoomStatus, RoomStatusModel>(
                  moduleName: ModuleName.RoomStatus)).Refresh();
-
-            await _virtualRoomPresenter.Spawn();
         }
 
         private void AskForPassword(string userName)

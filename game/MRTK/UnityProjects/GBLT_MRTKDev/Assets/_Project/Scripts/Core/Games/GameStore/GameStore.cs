@@ -19,6 +19,7 @@ namespace Core.Framework
         private readonly Setting _gameSetting;
         private readonly IObjectResolver _container;
         private readonly IDefinitionDataController _definitionDataController;
+        public EnvironmentGenericConfig EnvConfig { get; set; }
 
         [Inject]
         private readonly IPublisher<GameScreenForceChangeSignal> _gameScreenForceChangePublisher;
