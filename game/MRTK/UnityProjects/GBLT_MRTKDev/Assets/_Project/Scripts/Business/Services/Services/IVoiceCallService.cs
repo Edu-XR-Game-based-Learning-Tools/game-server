@@ -9,5 +9,11 @@ namespace Core.Business
         public UniTask LeaveChannelAsync();
 
         public (byte[], int) GetSamples();
+
+        public UniTask TransmissionAll();
+
+        public UniTask TransmitToChannel(string channelName = null);
+
+        public UniTask TransmitToNone();
     }
 }

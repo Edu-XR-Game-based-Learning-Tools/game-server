@@ -33,6 +33,7 @@ namespace Core.View
                 _gameStore.GState.RemoveModel<SplashScreenModel>();
                 (await _gameStore.GetOrCreateModel<LandingScreen, LandingScreenModel>(
                     moduleName: ModuleName.LandingScreen)).Refresh();
+                _gameStore.PassStartSession = true;
             });
         }
 

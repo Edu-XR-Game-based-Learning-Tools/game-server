@@ -50,6 +50,8 @@ namespace Core.Framework
 
         public ModuleName? LastHiddenModule { get; private set; } = null;
 
+        public bool PassStartSession { get; set; } = false;
+
         public GameStore(
             Setting gameSetting,
             IObjectResolver container)

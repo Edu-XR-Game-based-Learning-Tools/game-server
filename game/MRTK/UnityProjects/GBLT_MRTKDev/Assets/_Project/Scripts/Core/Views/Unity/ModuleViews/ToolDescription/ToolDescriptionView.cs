@@ -1,4 +1,5 @@
 using Core.Business;
+using Core.EventSignal;
 using Core.Extension;
 using Core.Framework;
 using Core.Module;
@@ -72,6 +73,8 @@ namespace Core.View
 
             _openBtn.OnClicked.AddListener(async () =>
             {
+                _showLoadingPublisher.Publish(new ShowLoadingSignal());
+
                 QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
                 if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
                     return;
@@ -83,6 +86,8 @@ namespace Core.View
                 _gameStore.GState.RemoveModel<LandingScreenModel>();
                 await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
                     moduleName: ModuleName.QuizzesRoomStatus);
+
+                _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
             });
         }
 
@@ -98,7 +103,7 @@ namespace Core.View
         {
             bool isInRoomView = _userDataController.ServerData.IsInRoom;
             bool isInGameView = _userDataController.ServerData.IsInGame;
-            _openBtn.SetActive(isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
+            _openBtn.SetActive(false && isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
         }
     }
 }

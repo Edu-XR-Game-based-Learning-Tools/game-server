@@ -5,6 +5,7 @@ using Core.Framework;
 using Core.Module;
 using Core.Utility;
 using Cysharp.Threading.Tasks;
+using MessagePipe;
 using Microsoft.MixedReality.Toolkit.UX;
 using Models;
 using Shared;
@@ -68,13 +69,17 @@ namespace Core.View
 
             [SerializeField][DebugOnly] protected PressableButton[] _toolBtns;
 
-            public SelectToolView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack) : base(transform, container, viewRoot, onBack)
+            protected readonly IPublisher<ShowLoadingSignal> _showLoadingPublisher;
+
+            public SelectToolView(Transform transform, IObjectResolver container, Transform viewRoot, Action onBack, IPublisher<ShowLoadingSignal> showLoadingPublisher) : base(transform, container, viewRoot, onBack)
             {
                 _gameStore = container.Resolve<GameStore>();
                 _classRoomHub = container.Resolve<ClassRoomHub>();
                 _quizzesHub = container.Resolve<QuizzesHub>();
                 _virtualRoomPresenter = container.Resolve<VirtualRoomPresenter>();
                 _userDataController = container.Resolve<IUserDataController>();
+
+                _showLoadingPublisher = showLoadingPublisher;
 
                 _backBtn = Transform.Find("Content/Header/Back_Btn").GetComponent<PressableButton>();
 
@@ -91,6 +96,8 @@ namespace Core.View
 
                 _toolBtns[0].OnClicked.AddListener(async () =>
                 {
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal());
+
                     QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
@@ -100,9 +107,11 @@ namespace Core.View
                     _virtualRoomPresenter.OnSelfJoinQuizzes();
                     await _classRoomHub.InviteToGame(response);
 
-                    _gameStore.HideCurrentModule(ModuleName.RoomStatus);
+                    _gameStore.RemoveCurrentModel();
                     (await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
                         moduleName: ModuleName.QuizzesRoomStatus)).Refresh();
+
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 });
             }
         }
@@ -334,7 +343,7 @@ namespace Core.View
             _settingBtn = transform.Find("CanvasDialog/Canvas/Content/Footer/Setting_Btn").GetComponent<PressableButton>();
 
             RootContent = transform.Find("CanvasDialog/Canvas/Content");
-            _selectToolView = new SelectToolView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform, OnBack);
+            _selectToolView = new SelectToolView(transform.Find("CanvasDialog/Canvas/ToolSelection"), _container, transform, OnBack, _showLoadingPublisher);
             _editAvatarView = new EditAvatarView(transform.Find("CanvasDialog/Canvas/EditAvatar"), _container, transform, OnBack);
             _settingView = new SettingView(transform.Find("CanvasDialog/Canvas/Setting"), _container, transform, OnBack);
 

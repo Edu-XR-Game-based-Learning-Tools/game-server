@@ -46,7 +46,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 32}
+  m_SizeDelta: {x: 100, y: 32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2633851795971165870
 MonoBehaviour:
@@ -256,7 +256,7 @@ MonoBehaviour:
   <VoiceRequiresFocus>k__BackingField: 1
   <SelectRequiresHover>k__BackingField: 0
   <IsToggled>k__BackingField:
-    active: 0
+    active: 1
     onEntered:
       m_PersistentCalls:
         m_Calls: []
@@ -336,7 +336,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 32, y: 32, z: 26.38652}
+  m_Size: {x: 100, y: 32, z: 26.38652}
   m_Center: {x: 0, y: 0, z: 4.6067348}
 --- !u!114 &2633851795971165869
 MonoBehaviour:
@@ -351,7 +351,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   thisCollider: {fileID: 2633851795971165868}
-  attachedRectTransform: {fileID: 8376646494505211229, guid: c6b351a67ceb69140b199996bbbea156, type: 3}
+  attachedRectTransform: {fileID: 2633851795971165865}
   padding: {x: 0, y: 0}
   forceUpdateEveryFrame: 0
 --- !u!95 &2633851795971165866

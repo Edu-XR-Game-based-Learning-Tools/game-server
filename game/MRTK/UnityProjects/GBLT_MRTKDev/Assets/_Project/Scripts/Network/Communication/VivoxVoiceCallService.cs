@@ -8,7 +8,7 @@ namespace Core.Network
 {
     public class VivoxVoiceCallService : IVoiceCallService, IStartable, IDisposable
     {
-        private string _channel;
+        private string _channelName;
 
         public VivoxVoiceCallService()
         {
@@ -27,6 +27,28 @@ namespace Core.Network
             VivoxService.Instance.ConnectionFailedToRecover += OnConnectionFailedToRecover;
         }
 
+        #region Lobby Action
+
+        public async UniTask TransmissionAll()
+        {
+            await VivoxService.Instance.SetChannelTransmissionModeAsync(TransmissionMode.All);
+        }
+
+        public async UniTask TransmitToChannel(string channelName = null)
+        {
+            channelName ??= _channelName;
+            await VivoxService.Instance.SetChannelTransmissionModeAsync(TransmissionMode.Single, channelName);
+        }
+
+        public async UniTask TransmitToNone()
+        {
+            await VivoxService.Instance.SetChannelTransmissionModeAsync(TransmissionMode.None);
+        }
+
+        #endregion Lobby Action
+
+        #region Session Action
+
         public async UniTask LoginToVivoxAsync(string userDisplayName)
         {
             LoginOptions options = new()
@@ -41,13 +63,13 @@ namespace Core.Network
         {
             if (!PermissionHelper.RequestMicrophonePermission())
                 throw new Exception("The app required mic permission");
-            _channel = channel ?? "Temp_Room";
+            _channelName = channel ?? "Temp_Room";
             await LoginToVivoxAsync(name);
         }
 
         public async UniTask LeaveChannelAsync()
         {
-            await VivoxService.Instance.LeaveChannelAsync(_channel);
+            await VivoxService.Instance.LeaveChannelAsync(_channelName);
             await LogoutOfVivoxAsync();
         }
 
@@ -63,7 +85,7 @@ namespace Core.Network
 
         private async void OnUserLoggedIn()
         {
-            await VivoxService.Instance.JoinGroupChannelAsync(_channel, ChatCapability.AudioOnly);
+            await VivoxService.Instance.JoinGroupChannelAsync(_channelName, ChatCapability.AudioOnly);
         }
 
         private void OnUserLoggedOut()
@@ -83,6 +105,8 @@ namespace Core.Network
 
         private void OnConnectionFailedToRecover()
         { }
+
+        #endregion Session Action
 
         public void Dispose()
         {

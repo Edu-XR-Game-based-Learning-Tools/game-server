@@ -32,6 +32,9 @@ namespace Shared.Network
         [Inject]
         protected readonly IPublisher<ShowPopupSignal> _showPopupPublisher;
 
+        [Inject]
+        protected readonly IPublisher<ShowLoadingSignal> _showLoadingPublisher;
+
         public ClassRoomHub(
             IObjectResolver container)
         {
@@ -171,6 +174,8 @@ namespace Shared.Network
         {
             _showPopupPublisher.Publish(new ShowPopupSignal(title: $"Host invite you to {data.ToolType} tool, Do you accept it?", yesContent: "Yes", noContent: "No", yesAction: async (value1, value2) =>
             {
+                _showLoadingPublisher.Publish(new ShowLoadingSignal());
+
                 QuizzesStatusResponse response = await _quizzesHub.JoinAsync(data.JoinQuizzesData);
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
@@ -179,6 +184,8 @@ namespace Shared.Network
                 _gameStore.RemoveCurrentModel();
                 await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
                     moduleName: ModuleName.QuizzesRoomStatus);
+
+                _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
             }, noAction: (_, _) => { }));
         }
 

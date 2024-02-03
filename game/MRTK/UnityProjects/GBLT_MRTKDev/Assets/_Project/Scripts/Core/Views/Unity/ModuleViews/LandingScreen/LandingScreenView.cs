@@ -275,6 +275,7 @@ namespace Core.View
             {
                 _openToolBtns[idx].OnClicked.AddListener(async () =>
                 {
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal());
                     QuizzesStatusResponse response = await _quizzesHub.JoinAsync(new JoinQuizzesData(), true);
 
                     if (_gameStore.CheckShowToastIfNotSuccessNetwork(response))
@@ -287,6 +288,8 @@ namespace Core.View
                     _gameStore.GState.RemoveModel<LandingScreenModel>();
                     await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
                         moduleName: ModuleName.QuizzesRoomStatus);
+
+                    _showLoadingPublisher.Publish(new ShowLoadingSignal(isShow: false));
                 });
             }
 
@@ -326,7 +329,7 @@ namespace Core.View
             _createBtn.SetActive(!isInRoomView);
             _userDropdown.GetChild((int)LandingScreenUserDropdownActionType.Logout).SetActive(!isInGameView);
             foreach (var btn in _openToolBtns)
-                btn.SetActive(isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
+                btn.SetActive(false && isInRoomView && !isInGameView && _userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost);
 
             EnableIsSignIn();
         }

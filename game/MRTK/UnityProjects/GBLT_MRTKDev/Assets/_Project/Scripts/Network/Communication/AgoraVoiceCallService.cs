@@ -92,6 +92,21 @@ namespace Core.Network
         {
             throw new NotImplementedException();
         }
+
+        public UniTask TransmissionAll()
+        {
+            throw new NotImplementedException();
+        }
+
+        public UniTask TransmitToChannel(string channelName = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UniTask TransmitToNone()
+        {
+            throw new NotImplementedException();
+        }
     }
 
     #region -- Agora Event ---
