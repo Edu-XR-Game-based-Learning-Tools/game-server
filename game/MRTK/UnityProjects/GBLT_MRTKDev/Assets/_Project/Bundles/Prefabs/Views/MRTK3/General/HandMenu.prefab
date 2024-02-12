@@ -613,9 +613,9 @@ MonoBehaviour:
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 0
-  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 0
-  m_ChildControlWidth: 0
+  m_ChildControlWidth: 1
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
@@ -1388,7 +1388,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165865, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 144
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165865, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_SizeDelta.y
@@ -1440,6 +1440,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165865, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2633851795971165868, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
+      propertyPath: m_Size.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165870, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
@@ -1557,7 +1561,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165865, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 144
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165865, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_SizeDelta.y
@@ -1613,7 +1617,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165868, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: m_Size.x
-      value: 144
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2633851795971165870, guid: 75480319f9f39fd48b76ee51c71a7294, type: 3}
       propertyPath: <IsToggled>k__BackingField.active

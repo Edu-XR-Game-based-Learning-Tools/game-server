@@ -84,7 +84,7 @@ namespace Microsoft.MixedReality.Toolkit.SpatialManipulation
 
         [SerializeField]
         [Tooltip("Min distance from eye to position element around, i.e. the sphere radius")]
-        private float minDistance = 0.3f;
+        private float minDistance = 0.5f;
 
         /// <summary>
         /// Min distance from eye to position element around, i.e. the sphere radius.
@@ -97,7 +97,7 @@ namespace Microsoft.MixedReality.Toolkit.SpatialManipulation
 
         [SerializeField]
         [Tooltip("Max distance from eye to element")]
-        private float maxDistance = 0.9f;
+        private float maxDistance = 0.5f;
 
         /// <summary>
         /// Max distance from eye to element.
@@ -110,7 +110,7 @@ namespace Microsoft.MixedReality.Toolkit.SpatialManipulation
 
         [SerializeField]
         [Tooltip("Default distance from eye to position element around, i.e. the sphere radius")]
-        private float defaultDistance = 0.7f;
+        private float defaultDistance = 0.5f;
 
         /// <summary>
         /// Initial placement distance. Should be between min and max.

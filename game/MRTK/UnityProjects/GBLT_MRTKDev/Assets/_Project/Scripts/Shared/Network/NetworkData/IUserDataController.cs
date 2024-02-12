@@ -24,7 +24,7 @@ namespace Shared.Network
     {
         public UserData UserData { get; set; }
         public RoomStatusVM RoomStatus { get; set; }
-        public bool IsSharing { get; set; } = true;
+        public bool IsSharing { get; set; } = false;
         public bool IsSharingQuizzesGame { get; set; } = false;
         public bool IsInRoom => RoomStatus != null && RoomStatus.RoomStatus != null;
         public bool IsInGame => RoomStatus != null && RoomStatus.InGameStatus != null;

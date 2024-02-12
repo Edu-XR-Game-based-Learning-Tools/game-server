@@ -282,7 +282,7 @@ namespace Core.View
 
         public void OnEndSession()
         {
-            transform.SetActive(false);
+            Destroy(gameObject);
         }
 
         #endregion Handle Hub Response

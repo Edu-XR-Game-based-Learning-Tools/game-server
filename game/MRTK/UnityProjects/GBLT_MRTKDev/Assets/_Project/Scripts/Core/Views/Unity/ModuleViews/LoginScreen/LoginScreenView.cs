@@ -73,6 +73,10 @@ namespace Core.View
             _formSwitchTxt = transform.Find("CanvasDialog/Canvas/Footer/FormSwitcher/Text").GetComponent<TextMeshProUGUI>();
             _formSwitchBtn = transform.Find("CanvasDialog/Canvas/Footer/FormSwitcher/FormSwitch_Btn").GetComponent<PressableButton>();
             _formSwitchBtnTxt = _formSwitchBtn.transform.Find("Frontplate/AnimatedContent/Text").GetComponent<TextMeshProUGUI>();
+
+            _usernameInput.text = "test1234";
+            _passwordInput.text = "test1234";
+            _rePasswordInput.text = "test1234";
         }
 
         private void EnableFormType(bool isShowLogin = true)

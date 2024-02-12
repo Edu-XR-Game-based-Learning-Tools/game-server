@@ -56,6 +56,8 @@ namespace Core.View
             _isSharingToggle.ForceSetToggled(false);
             _isSharingQuizzesToggle.ForceSetToggled(false);
             _handRayToggle.ForceSetToggled(_isToggleHandRay);
+
+            transform.Find("Canvas").SetActive(false);
         }
 
         [Inject]
@@ -97,18 +99,20 @@ namespace Core.View
             _isSharingToggle.OnClicked.AddListener(() =>
             {
                 _userDataController.ServerData.IsSharing = _isSharingToggle.IsToggled;
+                Debug.Log($"Sharing: {_userDataController.ServerData.IsSharing}");
             });
             _isSharingQuizzesToggle.OnClicked.AddListener(() =>
             {
                 _userDataController.ServerData.IsSharingQuizzesGame = _isSharingQuizzesToggle.IsToggled;
+                Debug.Log($"Quizzes Sharing: {_userDataController.ServerData.IsSharingQuizzesGame}");
             });
 
             _muteToggle.OnClicked.AddListener(() =>
             {
-                Debug.Log($"Mute: {_muteToggle.IsToggled}");
                 _isMute = _muteToggle.IsToggled;
                 if (_isMute) _voiceCallService.TransmitToNone();
                 else _voiceCallService.TransmitToChannel();
+                Debug.Log($"Mute: {_muteToggle.IsToggled}");
             });
             _handRayToggle.OnClicked.AddListener(() =>
             {

@@ -161,7 +161,7 @@ namespace Core.View
             });
             _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
-            _virtualRoomPresenter.OnSelfJoinQuizzes();
+            await _virtualRoomPresenter.OnSelfJoinQuizzes();
 
             _gameStore.RemoveCurrentModel();
             await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
@@ -282,7 +282,7 @@ namespace Core.View
                         return;
 
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
-                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _virtualRoomPresenter.OnSelfJoinQuizzes();
                     await _classRoomHub.InviteToGame(response);
 
                     _gameStore.GState.RemoveModel<LandingScreenModel>();

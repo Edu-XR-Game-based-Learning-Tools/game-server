@@ -71,8 +71,6 @@ namespace Core.Framework
             _classRoom = GameObject.Find("ClassRoom").transform;
 
             _teacherSeatTransform = _classRoom.Find("TeacherSeat");
-            _quizzesShareCam = _teacherSeatTransform.Find("ShareScreenCam").GetComponent<Camera>();
-            _quizzesShareRenderTexture = _quizzesShareCam.targetTexture;
             var studentSeatContainer = _classRoom.Find("Seats");
             _studentSeatTransforms = new Transform[studentSeatContainer.childCount];
             for (int idx = 0; idx < studentSeatContainer.childCount; idx++)
@@ -96,7 +94,7 @@ namespace Core.Framework
 
         #region Spawn First Enter
 
-        private async UniTask<Transform> SpawnCharacter(PublicUserData user = null, bool isSelf = false)
+        private async UniTask<Transform> SpawnCharacter(PublicUserData user = null, bool isSelf = false, bool isSpawn = false)
         {
             var data = user ?? _userDataController.ServerData.RoomStatus.RoomStatus.Self;
 
@@ -116,10 +114,10 @@ namespace Core.Framework
             }
 
             var characterObject = parent.GetChild(0);
-            if (isSelf)
+            if (isSelf && isSpawn)
             {
-                _MRTKRig.position = characterObject.Find("EyeCamPosition").position;
-                _MRTKRig.eulerAngles = characterObject.Find("EyeCamPosition").eulerAngles + Vector3.up * (data.IsHost ? -20f : 180f);
+                _MRTKRig.position = characterObject.Find("Head/EyeCamPosition").position;
+                _MRTKRig.eulerAngles = characterObject.Find("Head/EyeCamPosition").eulerAngles + Vector3.up * (data.IsHost ? -20f : 180f);
             }
 
             characterObject.Find("Head").ChangeLayersRecursively(isSelf ? "SelfModel" : "Default");
@@ -158,10 +156,10 @@ namespace Core.Framework
             UpdateQuizzesStatusModuleUI();
         }
 
-        private async UniTask UpdateCharacter(PublicUserData user)
+        private async UniTask UpdateCharacter(PublicUserData user, bool isSpawn = false)
         {
             UpdateRoomStatusModuleUI();
-            var character = await SpawnCharacter(user, _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId == user.ConnectionId);
+            var character = await SpawnCharacter(user, _userDataController.ServerData.RoomStatus.RoomStatus.Self.ConnectionId == user.ConnectionId, isSpawn);
             await UpdateCharacterCanvas(user, character);
         }
 
@@ -174,7 +172,7 @@ namespace Core.Framework
                     Destroy(transform.gameObject);
             _studentCharacters = new Transform[_studentSeatTransforms.Length];
 
-            foreach (var user in _userDataController.ServerData.RoomStatus.RoomStatus.AllInRoom) await UpdateCharacter(user);
+            foreach (var user in _userDataController.ServerData.RoomStatus.RoomStatus.AllInRoom) await UpdateCharacter(user, true);
 
             _classRoom.SetActive(true);
         }
@@ -239,19 +237,22 @@ namespace Core.Framework
 
         #region Sharing
 
-        [SerializeField] private bool _isSharingQuizzesCache = false;
-        [SerializeField] private bool _isSharingCache = false;
+        [SerializeField] private bool _isSharingQuizzesDev = false;
+        [SerializeField] private bool _isSharingDev = false;
+        [SerializeField][DebugOnly] private bool _isSharingQuizzesCache = false;
+        [SerializeField][DebugOnly] private bool _isSharingCache = false;
 
         private Texture2D GetShareTexture()
         {
             if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return null;
 
-            bool isSharing = _userDataController.ServerData.IsInRoom && _userDataController.ServerData.IsSharing && !_userDataController.ServerData.IsSharingQuizzesGame;
-            bool isSharingQuizzes = _userDataController.ServerData.IsInGame && _userDataController.ServerData.IsSharingQuizzesGame;
+            bool isSharing = _userDataController.ServerData.IsInRoom && _isSharingCache && !_isSharingQuizzesCache;
+            bool isSharingQuizzes = _userDataController.ServerData.IsInGame && _isSharingQuizzesCache;
 
             _shareScreenCam.SetActive(isSharing);
-            _quizzesShareCam.SetActive(isSharingQuizzes);
-            if (isSharingQuizzes)
+            if (_quizzesShareCam)
+                _quizzesShareCam.SetActive(isSharingQuizzes);
+            if (isSharingQuizzes && _quizzesShareCam)
                 return _quizzesShareRenderTexture.ToTexture2D();
             else if (isSharing)
                 return _screenRenderTexture.ToTexture2D();
@@ -290,21 +291,18 @@ namespace Core.Framework
                 return;
             _delaySharingSyncData = _delaySharingSyncDuration;
 
-            if (_isSharingCache == _userDataController.ServerData.IsSharing && _userDataController.ServerData.IsSharingQuizzesGame == _isSharingQuizzesCache)
-                return;
-
             if (!_userDataController.ServerData.RoomStatus.RoomStatus.Self.IsHost) return;
 
-            _isSharingCache = _userDataController.ServerData.IsSharing;
-            _isSharingQuizzesCache = _userDataController.ServerData.IsSharingQuizzesGame;
+            _isSharingCache = _isSharingDev || _userDataController.ServerData.IsSharing;
+            _isSharingQuizzesCache = _isSharingQuizzesDev || _userDataController.ServerData.IsSharingQuizzesGame;
 
             var shareTexture = GetShareTexture();
 
             _onUserTransformChangePublisher.Publish(new OnVirtualRoomTickSignal(sharingTickData: new SharingTickData
             {
                 Texture = shareTexture == null ? null : shareTexture.EncodeToJPG(),
-                IsSharing = _userDataController.ServerData.IsSharing,
-                IsSharingQuizzesGame = _userDataController.ServerData.IsSharingQuizzesGame,
+                IsSharing = _isSharingCache,
+                IsSharingQuizzesGame = _isSharingQuizzesCache,
             }));
 
             if (shareTexture != null) Destroy(shareTexture);
@@ -407,8 +405,28 @@ namespace Core.Framework
             return ui;
         }
 
-        public void OnSelfJoinQuizzes()
+        private string _questionViewPrefabPath = "Assets/_Project/Bundles/Prefabs/Views/MRTK3/Quizzes/QuestionView/QuestionView.prefab";
+        private string _answerViewPrefabPath = "Assets/_Project/Bundles/Prefabs/Views/MRTK3/Quizzes/AnswerView/AnswerView.prefab";
+
+        private async UniTask AddQuizzesToSeat()
         {
+            Transform userSeat = Self.IsHost ? _teacherSeatTransform : _studentSeatTransforms[Self.Index];
+            Transform ui = userSeat.Find("UI");
+            if (ui != null) { Destroy(ui.gameObject); }
+            GameObject prefab = await _bundleLoader.LoadAssetAsync<GameObject>(Self.IsHost ? _questionViewPrefabPath : _answerViewPrefabPath);
+            var obj = _container.Instantiate(prefab, userSeat.transform);
+            obj.name = "UI";
+            var shareGo = obj.transform.Find("ShareScreenCam");
+            if (shareGo)
+            {
+                _quizzesShareCam = shareGo.GetComponent<Camera>();
+                _quizzesShareRenderTexture = _quizzesShareCam.targetTexture;
+            }
+        }
+
+        public async UniTask OnSelfJoinQuizzes()
+        {
+            await AddQuizzesToSeat();
             if (Self.IsHost)
             {
                 _quizzesQuestionView = GetSelfTableUI().GetComponent<QuizzesQuestionView>();

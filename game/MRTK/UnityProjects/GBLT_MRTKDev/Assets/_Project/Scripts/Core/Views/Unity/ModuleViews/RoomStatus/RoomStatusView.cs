@@ -104,7 +104,7 @@ namespace Core.View
                         return;
 
                     _userDataController.ServerData.RoomStatus.InGameStatus = response;
-                    _virtualRoomPresenter.OnSelfJoinQuizzes();
+                    await _virtualRoomPresenter.OnSelfJoinQuizzes();
                     await _classRoomHub.InviteToGame(response);
 
                     _gameStore.RemoveCurrentModel();

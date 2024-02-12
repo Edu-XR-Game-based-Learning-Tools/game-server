@@ -518,7 +518,7 @@ namespace Core.View
         {
             _previewView.CountDownTween.Kill();
             _questionView.CountDownTween.Kill();
-            transform.SetActive(false);
+            Destroy(gameObject);
         }
 
         public void OnAnswer(AnswerData _)

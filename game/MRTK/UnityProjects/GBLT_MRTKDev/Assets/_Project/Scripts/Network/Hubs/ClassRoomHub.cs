@@ -179,7 +179,7 @@ namespace Shared.Network
                 QuizzesStatusResponse response = await _quizzesHub.JoinAsync(data.JoinQuizzesData);
                 _userDataController.ServerData.RoomStatus.InGameStatus = response;
 
-                _virtualRoomPresenter.OnSelfJoinQuizzes();
+                await _virtualRoomPresenter.OnSelfJoinQuizzes();
 
                 _gameStore.RemoveCurrentModel();
                 await _gameStore.GetOrCreateModel<QuizzesRoomStatus, QuizzesRoomStatusModel>(
