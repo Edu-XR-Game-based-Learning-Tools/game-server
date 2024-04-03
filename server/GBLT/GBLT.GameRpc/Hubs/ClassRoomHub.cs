@@ -42,7 +42,7 @@ namespace RpcService.Hub
             {
                 Random generator = new();
                 room = generator.Next(0, 1000000).ToString("D6");
-            } while (string.IsNullOrEmpty(room) && !set.Contains(room));
+            } while (set.Contains(room));
             return room;
         }
 
@@ -146,6 +146,27 @@ namespace RpcService.Hub
             return null;
         }
 
+        private static void AddStudentForTesting(RoomStatusResponse status)
+        {
+            var lst = status.AllInRoom.ToList();
+            for (int idx = 0; idx < 48; idx++)
+            {
+                Guid mockConnID;
+                var lstConnID = lst.Select(ele => ele.ConnectionId);
+                do
+                {
+                    mockConnID = Guid.NewGuid();
+                } while (lstConnID.Contains(mockConnID));
+                lst.Add(new PublicUserData
+                {
+                    ConnectionId = mockConnID,
+                    Name = $"Name - {idx}",
+                    Index = GetIndexPositionOfUser(lst.ToArray()),
+                });
+            }
+            status.AllInRoom = lst.ToArray();
+        }
+
         private async Task<RoomStatusResponse> TryCreateRoom(JoinClassRoomData data)
         {
             if (!data.RoomId.IsNullOrEmpty()) return null;
@@ -162,6 +183,9 @@ namespace RpcService.Hub
                 (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
 
                 RoomStatusResponse status = new() { Self = _self, AllInRoom = _storage.AllValues.ToArray(), Id = _room.GroupName, JoinClassRoomData = data };
+
+                //AddStudentForTesting(status);
+
                 BroadcastExceptSelf(_room).OnJoin(status, _self);
                 await SaveRoomDataToCache(status);
                 return status;
@@ -171,6 +195,18 @@ namespace RpcService.Hub
                 Console.WriteLine(ex.ToString());
                 throw;
             }
+        }
+
+        private static int GetIndexPositionOfUser(PublicUserData[] allInRoom)
+        {
+            var allIndexesInRoom = allInRoom.Select(user => user.Index).OrderBy(index => index);
+            int index = -1;
+            for (int idx = 0; idx < allIndexesInRoom.Count(); idx++)
+            {
+                if (index != allIndexesInRoom.ElementAt(idx)) break;
+                index++;
+            }
+            return index;
         }
 
         public async Task<RoomStatusResponse> JoinAsync(JoinClassRoomData data)
@@ -186,14 +222,7 @@ namespace RpcService.Hub
                 RoomStatusResponse validateMsg = (RoomStatusResponse)ValidateJoinRoom(data, status);
                 if (validateMsg != null) return validateMsg;
 
-                var allIndexesInRoom = status.AllInRoom.Select(user => user.Index).OrderBy(index => index);
-                int index = -1;
-                for (int idx = 0; idx < allIndexesInRoom.Count(); idx++)
-                {
-                    if (index != allIndexesInRoom.ElementAt(idx)) break;
-                    index++;
-                }
-                _self.Index = index; // -1 for not count teacher, teacher seat: index = -1
+                _self.Index = GetIndexPositionOfUser(status.AllInRoom); // -1 for not count teacher, teacher seat: index = -1
                 (_room, _storage) = await Group.AddAsync(data.RoomId, (PublicUserData)_self);
 
                 status.Self = _self;

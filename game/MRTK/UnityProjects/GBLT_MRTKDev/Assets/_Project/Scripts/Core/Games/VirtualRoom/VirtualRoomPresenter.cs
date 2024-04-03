@@ -116,8 +116,8 @@ namespace Core.Framework
             var characterObject = parent.GetChild(0);
             if (isSelf && isSpawn)
             {
-                _MRTKRig.position = characterObject.Find("Head/EyeCamPosition").position;
                 _MRTKRig.eulerAngles = characterObject.Find("Head/EyeCamPosition").eulerAngles + Vector3.up * (data.IsHost ? -20f : 180f);
+                _MRTKRig.position = characterObject.Find("Head/EyeCamPosition").position;
             }
 
             characterObject.Find("Head").ChangeLayersRecursively(isSelf ? "SelfModel" : "Default");
